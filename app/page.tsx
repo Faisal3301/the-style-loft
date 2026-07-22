@@ -1,14 +1,12 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
+import Header from "./components/Header";
+import Sidebar from "./components/Sidebar";
 import MediaDisplay from "./components/MediaDisplay";
+import Footer from "./components/Footer";
 import { db } from "./config/firebase";
-import {
-  collection,
-  getDocs,
-  orderBy,
-  query
-} from "firebase/firestore";
+import { collection, getDocs, orderBy, query } from "firebase/firestore";
 
 interface Product {
   id: string;
@@ -22,58 +20,29 @@ interface Product {
   mediaType: "image" | "video";
 }
 
-interface SubCategoryItem {
-  name: string;
-  driveFolderUrl?: string;
-}
-
-interface DynamicCategory {
-  id: string;
-  name: string;
-  subCategories: SubCategoryItem[];
-}
-
-// 🌟 Google Drive link ko IDM-safe direct streaming/viewing link mein convert karne ka helper function
-const getDirectMediaUrl = (url: string) => {
-  if (!url) return "";
-  if (url.includes("drive.google.com") || url.includes("docs.google.com")) {
-    const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-    if (match && match[1]) {
-      return `https://drive.google.com/uc?export=open&id=${match[1]}`;
-    }
-  }
-  return url;
-};
-
 export default function TheStyleLoftClientDashboard() {
   const [products, setProducts] = useState<Product[]>([]);
-  const [categoriesList, setCategoriesList] = useState<DynamicCategory[]>([]);
+  const [categoriesList, setCategoriesList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // Navbar Country / Region State (US/UK Professional Switch)
   const [country, setCountry] = useState<"US" | "UK">("US");
-
-  // Search & Filter States
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState("ALL");
   const [selectedSubCategoryFilter, setSelectedSubCategoryFilter] = useState("ALL");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  
+  // Dynamic Limits controlled by scrolling
+  const [sectionLimits, setSectionLimits] = useState<{ [key: string]: number }>({});
+  
+  // Ref for general page/grid infinite scrolling observation
+  const loadMoreTriggerRef = useRef<HTMLDivElement>(null);
 
-  // 🌟 Pagination / Lazy Loading State (System ko fast rakhne ke liye)
-  const [visibleCount, setVisibleCount] = useState(12);
-
-  // Fetch Data from Firebase
   const fetchData = async () => {
     setLoading(true);
     try {
       const catSnap = await getDocs(collection(db, "categories"));
-      const fetchedCats: DynamicCategory[] = [];
+      const fetchedCats: any[] = [];
       catSnap.forEach((docSnap) => {
-        const data = docSnap.data();
-        fetchedCats.push({
-          id: docSnap.id,
-          name: data.name,
-          subCategories: data.subCategories || []
-        });
+        fetchedCats.push({ id: docSnap.id, ...docSnap.data() });
       });
       setCategoriesList(fetchedCats);
 
@@ -93,10 +62,9 @@ export default function TheStyleLoftClientDashboard() {
 
   useEffect(() => {
     fetchData();
-    document.title = "The Style Loft - Global Store";
+    document.title = "The Style Loft - Global Luxury Store";
   }, []);
 
-  // Filtered Products for Display & Search
   const filteredProducts = useMemo(() => {
     return products.filter(p => {
       const matchesCat = selectedCategoryFilter === "ALL" || p.category === selectedCategoryFilter;
@@ -109,299 +77,239 @@ export default function TheStyleLoftClientDashboard() {
 
   const activeCatObj = categoriesList.find(c => c.name === selectedCategoryFilter);
 
+  const getLimit = (key: string) => sectionLimits[key] || 8;
+
+  // Auto increase limit on scroll end
+  const increaseLimit = (key: string, max: number) => {
+    setSectionLimits(prev => {
+      const current = prev[key] || 8;
+      if (current >= max) return prev;
+      return { ...prev, [key]: Math.min(current + 8, max) };
+    });
+  };
+
+  // Intersection observer for automatic infinite scroll trigger
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          if (selectedCategoryFilter !== "ALL" || searchQuery) {
+            increaseLimit("single_cat", filteredProducts.length);
+          }
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (loadMoreTriggerRef.current) {
+      observer.observe(loadMoreTriggerRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [filteredProducts.length, selectedCategoryFilter, searchQuery]);
+
   return (
-    <div style={{ width: "100%", backgroundColor: "#f3f4f6", minHeight: "100vh", fontFamily: "Arial, sans-serif", color: "#111827", display: "flex", flexDirection: "column" }}>
+    <div style={{ width: "100%", backgroundColor: "#f1f5f9", minHeight: "100vh", fontFamily: "'Inter', Arial, sans-serif", display: "flex", flexDirection: "column" }}>
+      
+      <style jsx global>{`
+        .section-card {
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          border-radius: 16px;
+          padding: 24px;
+          box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
+          width: 100%;
+          box-sizing: border-box;
+        }
+        .item-card-hover {
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          flex: 0 0 230px;
+          background: #f8fafc;
+          border: 1px solid #e2e8f0;
+          border-radius: 12px;
+          padding: 12px;
+          cursor: pointer;
+        }
+        .item-card-hover:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 10px 20px -5px rgba(37,99,235,0.15);
+          border-color: #2563eb !important;
+        }
+        .horizontal-carousel {
+          display: flex;
+          gap: 16px;
+          overflow-x: auto;
+          scroll-behavior: smooth;
+          padding-bottom: 12px;
+        }
+        .horizontal-carousel::-webkit-scrollbar {
+          height: 8px;
+        }
+        .horizontal-carousel::-webkit-scrollbar-thumb {
+          background: #cbd5e1;
+          border-radius: 10px;
+        }
+      `}</style>
 
-      {/* 🌟 PROFESSIONAL HEADER */}
-      <header style={{ backgroundColor: "#131921", color: "#ffffff", padding: "12px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "15px", position: "sticky", top: 0, zIndex: 100, boxShadow: "0 2px 5px rgba(0,0,0,0.2)" }}>
+      {/* Header Component */}
+      <Header
+        country={country}
+        setCountry={setCountry}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        selectedCategoryFilter={selectedCategoryFilter}
+        setSelectedCategoryFilter={setSelectedCategoryFilter}
+        setSelectedSubCategoryFilter={setSelectedSubCategoryFilter}
+        setVisibleCount={() => {}}
+        categoriesList={categoriesList}
+        isSidebarOpen={isSidebarOpen}
+        setIsSidebarOpen={setIsSidebarOpen}
+      />
 
-        {/* Logo & Brand */}
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", cursor: "pointer" }} onClick={() => { setSelectedCategoryFilter("ALL"); setSelectedSubCategoryFilter("ALL"); }}>
-          <div style={{ backgroundColor: "#febd69", padding: "8px 14px", borderRadius: "6px", fontWeight: "900", color: "#131921", fontSize: "16px", letterSpacing: "0.5px", boxShadow: "0 1px 3px rgba(0,0,0,0.2)" }}>
-            ✨ The Style Loft
-          </div>
-          <span style={{ fontSize: "12px", color: "#9ca3af", fontWeight: "bold" }}>{country === "US" ? "US Storefront" : "UK Storefront"}</span>
-        </div>
+      <div style={{ display: "flex", flex: 1, width: "100%", maxWidth: "1750px", margin: "0 auto", padding: "24px", gap: "20px", boxSizing: "border-box" }}>
+        
+        {/* Sidebar Component */}
+        <Sidebar
+          isSidebarOpen={isSidebarOpen}
+          categoriesList={categoriesList}
+          selectedCategoryFilter={selectedCategoryFilter}
+          setSelectedCategoryFilter={setSelectedCategoryFilter}
+          selectedSubCategoryFilter={selectedSubCategoryFilter}
+          setSelectedSubCategoryFilter={setSelectedSubCategoryFilter}
+          setVisibleCount={() => {}}
+          activeCatObj={activeCatObj}
+        />
 
-        {/* Fixed Search Bar */}
-        <div style={{ display: "flex", flex: "1", maxWidth: "650px", minWidth: "280px", borderRadius: "6px", overflow: "hidden", backgroundColor: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
-          <select
-            value={selectedCategoryFilter}
-            onChange={(e) => {
-              setSelectedCategoryFilter(e.target.value);
-              setSelectedSubCategoryFilter("ALL");
-              setVisibleCount(12);
-            }}
-            style={{ backgroundColor: "#e5e7eb", border: "none", padding: "0 12px", fontSize: "13px", outline: "none", cursor: "pointer", color: "#111", fontWeight: "bold" }}
-          >
-            <option value="ALL">All Departments</option>
-            {categoriesList.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
-          </select>
-
-          <input
-            type="text"
-            placeholder={country === "US" ? "Search US products, collections..." : "Search UK products, collections..."}
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setVisibleCount(12);
-            }}
-            style={{ flex: 1, padding: "10px 16px", border: "none", fontSize: "14px", outline: "none", color: "#000000", backgroundColor: "#ffffff" }}
-          />
-
-          <button style={{ backgroundColor: "#febd69", border: "none", padding: "0 20px", cursor: "pointer", fontSize: "16px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            🔍
-          </button>
-        </div>
-
-        {/* Country Selector & Cart */}
-        <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
-          <div
-            onClick={() => setCountry(country === "US" ? "UK" : "US")}
-            style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", background: "#374151", padding: "8px 12px", borderRadius: "6px", fontSize: "12px", fontWeight: "bold", color: "#fff", border: "1px solid #4b5563" }}
-            title="Toggle Country Region"
-          >
-            <span>{country === "US" ? "🇺🇸 US ($)" : "🇬🇧 UK (£)"}</span>
-          </div>
-
-          <div style={{ display: "flex", alignItems: "center", gap: "6px", background: "#232f3e", padding: "8px 14px", borderRadius: "6px", cursor: "pointer", border: "1px solid #374151" }}>
-            <span>🛒</span>
-            <span style={{ fontSize: "13px", fontWeight: "bold", color: "#fff" }}>Bag</span>
-          </div>
-        </div>
-      </header>
-
-      {/* Sub Navbar links */}
-      <nav style={{ backgroundColor: "#232f3e", color: "white", padding: "10px 24px", display: "flex", gap: "20px", fontSize: "13px", overflowX: "auto", alignItems: "center" }}>
-        <span
-          onClick={() => { setSelectedCategoryFilter("ALL"); setSelectedSubCategoryFilter("ALL"); setVisibleCount(12); }}
-          style={{ cursor: "pointer", fontWeight: selectedCategoryFilter === "ALL" ? "bold" : "normal", color: selectedCategoryFilter === "ALL" ? "#febd69" : "#fff", whiteSpace: "nowrap" }}
-        >
-          🔥 All Products
-        </span>
-        {categoriesList.map(cat => (
-          <span
-            key={cat.id}
-            onClick={() => { setSelectedCategoryFilter(cat.name); setSelectedSubCategoryFilter("ALL"); setVisibleCount(12); }}
-            style={{ cursor: "pointer", whiteSpace: "nowrap", color: selectedCategoryFilter === cat.name ? "#febd69" : "#d1d5db", fontWeight: selectedCategoryFilter === cat.name ? "bold" : "normal" }}
-          >
-            {cat.name}
-          </span>
-        ))}
-      </nav>
-
-      {/* MAIN CONTENT WRAPPER WITH SIDEBAR */}
-      <div style={{ display: "flex", flex: 1, maxWidth: "1500px", width: "100%", margin: "0 auto", padding: "20px", gap: "25px", boxSizing: "border-box" }}>
-
-        {/* 📂 PROFESSIONAL SIDEBAR */}
-        <aside style={{ width: "260px", flexShrink: 0 }}>
-          <div style={{ backgroundColor: "#fff", padding: "16px", borderRadius: "8px", border: "1px solid #e5e7eb", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", position: "sticky", top: "80px" }}>
-            <h3 style={{ fontSize: "14px", fontWeight: "bold", margin: "0 0 12px 0", color: "#111", borderBottom: "2px solid #febd69", paddingBottom: "6px" }}>
-              📋 Department Filter
-            </h3>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <button
-                onClick={() => { setSelectedCategoryFilter("ALL"); setSelectedSubCategoryFilter("ALL"); setVisibleCount(12); }}
-                style={{ textAlign: "left", padding: "8px 10px", borderRadius: "6px", background: selectedCategoryFilter === "ALL" ? "#eff6ff" : "transparent", color: selectedCategoryFilter === "ALL" ? "#2563eb" : "#374151", border: "none", fontWeight: selectedCategoryFilter === "ALL" ? "bold" : "normal", cursor: "pointer", fontSize: "13px" }}
-              >
-                All Collections
-              </button>
-              {categoriesList.map(cat => (
-                <button
-                  key={cat.id}
-                  onClick={() => { setSelectedCategoryFilter(cat.name); setSelectedSubCategoryFilter("ALL"); setVisibleCount(12); }}
-                  style={{ textAlign: "left", padding: "8px 10px", borderRadius: "6px", background: selectedCategoryFilter === cat.name ? "#eff6ff" : "transparent", color: selectedCategoryFilter === cat.name ? "#2563eb" : "#374151", border: "none", fontWeight: selectedCategoryFilter === cat.name ? "bold" : "normal", cursor: "pointer", fontSize: "13px" }}
-                >
-                  {cat.name}
-                </button>
-              ))}
-            </div>
-
-            {/* Sub-categories inside Sidebar */}
-            {activeCatObj && activeCatObj.subCategories.length > 0 && (
-              <div style={{ marginTop: "20px", borderTop: "1px solid #e5e7eb", paddingTop: "15px" }}>
-                <h4 style={{ fontSize: "13px", fontWeight: "bold", margin: "0 0 10px 0", color: "#4b5563" }}>
-                  Sub-Categories ({activeCatObj.name})
-                </h4>
-                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                  <span
-                    onClick={() => { setSelectedSubCategoryFilter("ALL"); setVisibleCount(12); }}
-                    style={{ fontSize: "12px", padding: "6px 8px", cursor: "pointer", color: selectedSubCategoryFilter === "ALL" ? "#2563eb" : "#6b7280", fontWeight: selectedSubCategoryFilter === "ALL" ? "bold" : "normal" }}
-                  >
-                    • All in {activeCatObj.name}
-                  </span>
-                  {activeCatObj.subCategories.map((sub, i) => (
-                    <span
-                      key={i}
-                      onClick={() => { setSelectedSubCategoryFilter(sub.name); setVisibleCount(12); }}
-                      style={{ fontSize: "12px", padding: "6px 8px", cursor: "pointer", color: selectedSubCategoryFilter === sub.name ? "#2563eb" : "#6b7280", fontWeight: selectedSubCategoryFilter === sub.name ? "bold" : "normal" }}
-                    >
-                      • {sub.name}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </aside>
-
-        {/* PRODUCT CATALOG GRID */}
-        <main style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px", backgroundColor: "#fff", padding: "12px 18px", borderRadius: "8px", border: "1px solid #e5e7eb" }}>
-            <h1 style={{ fontSize: "16px", fontWeight: "bold", margin: 0, color: "#111" }}>
-              {selectedCategoryFilter === "ALL" ? "Featured Showcase" : selectedCategoryFilter}
-              {selectedSubCategoryFilter !== "ALL" && ` / ${selectedSubCategoryFilter}`}
-            </h1>
-            <span style={{ fontSize: "13px", color: "#6b7280" }}>Showing {filteredProducts.length} items ({country})</span>
-          </div>
-
+        {/* Main Content Layout */}
+        <main style={{ flex: 1, display: "flex", flexDirection: "column", gap: "28px", minWidth: 0 }}>
+          
           {loading ? (
-            <div style={{ textAlign: "center", padding: "80px 0", color: "#6b7280", fontSize: "15px" }}>Loading catalog securely...</div>
-          ) : filteredProducts.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "60px 20px", backgroundColor: "#fff", borderRadius: "8px", border: "1px solid #e5e7eb" }}>
-              <p style={{ fontSize: "15px", color: "#4b5563", margin: "0 0 10px 0" }}>No products found matching your filter.</p>
-              <button
-                onClick={() => { setSelectedCategoryFilter("ALL"); setSelectedSubCategoryFilter("ALL"); setSearchQuery(""); setVisibleCount(12); }}
-                style={{ background: "#ffd814", border: "none", padding: "8px 16px", borderRadius: "6px", fontWeight: "bold", cursor: "pointer", fontSize: "12px" }}
-              >
-                Clear Filters
-              </button>
+            <div style={{ textAlign: "center", padding: "100px", backgroundColor: "#fff", borderRadius: "16px", color: "#64748b", fontWeight: "600" }}>
+              Loading store sections efficiently...
             </div>
-          ) : (
-            <>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "20px" }}>
-                {filteredProducts.slice(0, visibleCount).map((p) => (
-                  <div
-                    key={p.id}
-                    onClick={() => {
-                      window.location.href = `/product/${p.id}`;
-                    }}
-                    style={{
-                      backgroundColor: "#fff",
-                      border: "1px solid #e5e7eb",
-                      borderRadius: "8px",
-                      padding: "12px",
-                      display: "flex",
-                      flexDirection: "column",
-                      justifyContent: "space-between",
-                      cursor: "pointer",
-                      transition: "transform 0.2s ease, box-shadow 0.2s ease",
-                      boxShadow: "0 1px 3px rgba(0,0,0,0.05)"
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = "translateY(-4px)";
-                      e.currentTarget.style.boxShadow = "0 10px 20px rgba(0,0,0,0.1)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = "translateY(0)";
-                      e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.05)";
-                    }}
-                  >
-                    <div>
-                      {/* Product Media Box - IDM-Safe Clean Rendering */}
-                      <div style={{ width: "100%", height: "200px", borderRadius: "6px", overflow: "hidden", backgroundColor: "#0f172a", marginBottom: "10px", position: "relative" }}>
-                        {p.mediaUrl ? (
-                          <div style={{ width: "100%", height: "100%", pointerEvents: "none" }}> {/* pointerEvents none taake card click par hi detail page khule */}
-                            <MediaDisplay
-                              url={p.mediaUrl}
-                              type={p.mediaType || "image"}
-                              alt={p.name}
-                            />
-                          </div>
-                        ) : (
-                          <div style={{ color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", height: "100%", fontSize: "12px" }}>
-                            No Media
-                          </div>
-                        )}
-                        <span style={{ position: "absolute", top: "6px", right: "6px", background: "rgba(0,0,0,0.75)", color: "#fff", fontSize: "10px", padding: "2px 6px", borderRadius: "4px", zIndex: 3 }}>
-                          {p.category}
-                        </span>
-                      </div>
-
-                      <h3 style={{ fontSize: "14px", fontWeight: "bold", margin: "0 0 4px 0", color: "#1f2937", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                        {p.name}
-                      </h3>
-
-                      <p style={{ fontSize: "11px", color: "#6b7280", margin: "0 0 10px 0" }}>
-                        {p.subCategory ? p.subCategory : "Exclusive Collection"}
-                      </p>
+          ) : searchQuery ? (
+            /* SEARCH RESULTS */
+            <div className="section-card">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", borderBottom: "2px solid #f59e0b", paddingBottom: "10px" }}>
+                <h2 style={{ fontSize: "18px", fontWeight: "900", color: "#0f172a", margin: 0 }}>
+                  🔍 Search Results for "{searchQuery}"
+                </h2>
+                <span style={{ fontSize: "13px", color: "#64748b", fontWeight: "600" }}>{filteredProducts.length} items found</span>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))", gap: "18px" }}>
+                {filteredProducts.map(p => (
+                  <div key={p.id} onClick={() => { window.location.href = `/product/${p.id}`; }} className="item-card-hover" style={{ flex: "1" }}>
+                    <div style={{ width: "100%", height: "180px", borderRadius: "8px", overflow: "hidden", backgroundColor: "#0f172a", marginBottom: "10px" }}>
+                      <MediaDisplay url={p.mediaUrl} type={p.mediaType || "image"} alt={p.name} />
                     </div>
+                    <h4 style={{ fontSize: "14px", fontWeight: "bold", margin: "0 0 4px 0", color: "#0f172a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</h4>
+                    <p style={{ fontSize: "12px", color: "#64748b", margin: "0 0 8px 0" }}>{p.subCategory || p.category}</p>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #e2e8f0", paddingTop: "6px" }}>
+                      <span style={{ fontSize: "14px", fontWeight: "900", color: "#0f172a" }}>{country === "US" ? "$" : "£"}{p.salePrice || p.price}</span>
+                      <span style={{ fontSize: "11px", backgroundColor: "#fef3c7", color: "#92400e", padding: "3px 8px", borderRadius: "6px", fontWeight: "bold" }}>View ↗</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : selectedCategoryFilter !== "ALL" ? (
+            /* SINGLE CATEGORY VIEW WITH SCROLL-TRIGGERED LAZY LOADING */
+            <div className="section-card">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", borderBottom: "2px solid #f59e0b", paddingBottom: "10px" }}>
+                <div>
+                  <span style={{ fontSize: "11px", color: "#f59e0b", fontWeight: "900", textTransform: "uppercase" }}>Active Department</span>
+                  <h2 style={{ fontSize: "22px", fontWeight: "900", color: "#0f172a", margin: "2px 0 0 0" }}>
+                    {selectedCategoryFilter} {selectedSubCategoryFilter !== "ALL" ? `› ${selectedSubCategoryFilter}` : ""}
+                  </h2>
+                </div>
+                <button
+                  onClick={() => { setSelectedCategoryFilter("ALL"); setSelectedSubCategoryFilter("ALL"); }}
+                  style={{ backgroundColor: "#1e293b", color: "#ffffff", border: "none", padding: "8px 16px", borderRadius: "8px", fontSize: "12px", fontWeight: "bold", cursor: "pointer" }}
+                >
+                  ← Back to All Sections
+                </button>
+              </div>
 
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "auto", borderTop: "1px solid #f3f4f6", paddingTop: "8px" }}>
-                      <div>
-                        {p.salePrice ? (
-                          <div>
-                            <s style={{ fontSize: "11px", color: "#9ca3af" }}>{country === "US" ? "$" : "£"}{p.price}</s>
-                            <span style={{ fontSize: "14px", fontWeight: "bold", color: "#dc2626", marginLeft: "6px" }}>{country === "US" ? "$" : "£"}{p.salePrice}</span>
-                          </div>
-                        ) : (
-                          <span style={{ fontSize: "14px", fontWeight: "bold", color: "#111" }}>{country === "US" ? "$" : "£"}{p.price}</span>
-                        )}
-                      </div>
-                      <span style={{ fontSize: "11px", background: "#fffaeb", color: "#b45309", padding: "4px 8px", borderRadius: "4px", fontWeight: "bold", border: "1px solid #fde68a" }}>
-                        View ↗
-                      </span>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))", gap: "18px" }}>
+                {filteredProducts.slice(0, getLimit("single_cat")).map(p => (
+                  <div key={p.id} onClick={() => { window.location.href = `/product/${p.id}`; }} className="item-card-hover" style={{ flex: "1" }}>
+                    <div style={{ width: "100%", height: "180px", borderRadius: "8px", overflow: "hidden", backgroundColor: "#0f172a", marginBottom: "10px" }}>
+                      <MediaDisplay url={p.mediaUrl} type={p.mediaType || "image"} alt={p.name} />
+                    </div>
+                    <h4 style={{ fontSize: "14px", fontWeight: "bold", margin: "0 0 4px 0", color: "#0f172a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</h4>
+                    <p style={{ fontSize: "12px", color: "#64748b", margin: "0 0 8px 0" }}>{p.subCategory || p.category}</p>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #e2e8f0", paddingTop: "6px" }}>
+                      <span style={{ fontSize: "14px", fontWeight: "900", color: "#0f172a" }}>{country === "US" ? "$" : "£"}{p.salePrice || p.price}</span>
+                      <span style={{ fontSize: "11px", backgroundColor: "#fef3c7", color: "#92400e", padding: "3px 8px", borderRadius: "6px", fontWeight: "bold" }}>View ↗</span>
                     </div>
                   </div>
                 ))}
               </div>
 
-              {/* 🌟 LOAD MORE BUTTON (LAZY LOADING) */}
-              {visibleCount < filteredProducts.length && (
-                <div style={{ textAlign: "center", marginTop: "35px" }}>
-                  <button
-                    onClick={() => setVisibleCount(prev => prev + 12)}
-                    style={{
-                      backgroundColor: "#ffd814",
-                      border: "1px solid #fcd200",
-                      padding: "12px 35px",
-                      borderRadius: "8px",
-                      fontWeight: "bold",
-                      cursor: "pointer",
-                      fontSize: "14px",
-                      boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
-                      color: "#111"
+              {/* Hidden trigger element that automatically loads more items on scroll */}
+              <div ref={loadMoreTriggerRef} style={{ height: "40px", marginTop: "20px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                {getLimit("single_cat") < filteredProducts.length && (
+                  <span style={{ fontSize: "12px", color: "#64748b", fontWeight: "600" }}>Loading more items as you scroll...</span>
+                )}
+              </div>
+            </div>
+          ) : (
+            /* MULTI-SECTION CAROUSEL WITH HORIZONTAL SCROLL LAZY LOADING */
+            categoriesList.map((cat) => {
+              const catProducts = products.filter(p => p.category === cat.name);
+              if (catProducts.length === 0) return null;
+
+              const currentLimit = getLimit(cat.id);
+
+              return (
+                <div key={cat.id} className="section-card">
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", borderBottom: "2px solid #f59e0b", paddingBottom: "10px" }}>
+                    <h2 style={{ fontSize: "18px", fontWeight: "900", color: "#0f172a", margin: 0 }}>
+                      Best Sellers in {cat.name}
+                    </h2>
+                    <button
+                      onClick={() => { setSelectedCategoryFilter(cat.name); setSelectedSubCategoryFilter("ALL"); }}
+                      style={{ fontSize: "12px", background: "none", border: "none", color: "#2563eb", fontWeight: "bold", cursor: "pointer" }}
+                    >
+                      See All ({catProducts.length}) ➔
+                    </button>
+                  </div>
+
+                  {/* Horizontal Scroll with Auto-Loader on Scroll End */}
+                  <div 
+                    className="horizontal-carousel"
+                    onScroll={(e) => {
+                      const target = e.currentTarget;
+                      // Jab user carousel ko right end par scroll karega, mazeed items load ho jayenge
+                      if (target.scrollLeft + target.clientWidth >= target.scrollWidth - 50) {
+                        increaseLimit(cat.id, catProducts.length);
+                      }
                     }}
                   >
-                    Load More Products ⬇️
-                  </button>
+                    {catProducts.slice(0, currentLimit).map(p => (
+                      <div key={p.id} onClick={() => { window.location.href = `/product/${p.id}`; }} className="item-card-hover">
+                        <div style={{ width: "100%", height: "170px", borderRadius: "8px", overflow: "hidden", backgroundColor: "#0f172a", marginBottom: "10px" }}>
+                          <MediaDisplay url={p.mediaUrl} type={p.mediaType || "image"} alt={p.name} />
+                        </div>
+                        <h4 style={{ fontSize: "13px", fontWeight: "bold", margin: "0 0 4px 0", color: "#0f172a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</h4>
+                        <p style={{ fontSize: "11px", color: "#64748b", margin: "0 0 8px 0" }}>{p.subCategory || cat.name}</p>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #e2e8f0", paddingTop: "6px" }}>
+                          <span style={{ fontSize: "14px", fontWeight: "900", color: "#0f172a" }}>{country === "US" ? "$" : "£"}{p.salePrice || p.price}</span>
+                          <span style={{ fontSize: "11px", backgroundColor: "#fef3c7", color: "#92400e", padding: "3px 8px", borderRadius: "6px", fontWeight: "bold" }}>View ↗</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              )}
-            </>
+              );
+            })
           )}
+
         </main>
       </div>
 
-      {/* 🌟 PROFESSIONAL FOOTER */}
-      <footer style={{ backgroundColor: "#131921", color: "#9ca3af", padding: "40px 20px 20px 20px", marginTop: "auto", fontSize: "13px" }}>
-        <div style={{ maxWidth: "1200px", margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "30px", marginBottom: "30px" }}>
-          <div>
-            <h4 style={{ color: "#fff", fontSize: "14px", marginBottom: "12px" }}>Get to Know Us</h4>
-            <p style={{ margin: "0 0 6px 0", cursor: "pointer" }}>About The Style Loft</p>
-            <p style={{ margin: "0 0 6px 0", cursor: "pointer" }}>Careers & Culture</p>
-            <p style={{ margin: 0, cursor: "pointer" }}>Global Operations ({country})</p>
-          </div>
-          <div>
-            <h4 style={{ color: "#fff", fontSize: "14px", marginBottom: "12px" }}>Make Money with Us</h4>
-            <p style={{ margin: "0 0 6px 0", cursor: "pointer" }}>Sell on The Style Loft</p>
-            <p style={{ margin: "0 0 6px 0", cursor: "pointer" }}>Protect & Build Your Brand</p>
-            <p style={{ margin: 0, cursor: "pointer" }}>Advertise Your Products</p>
-          </div>
-          <div>
-            <h4 style={{ color: "#fff", fontSize: "14px", marginBottom: "12px" }}>Let Us Help You</h4>
-            <p style={{ margin: "0 0 6px 0", cursor: "pointer" }}>Account & Order Tracking</p>
-            <p style={{ margin: "0 0 6px 0", cursor: "pointer" }}>Shipping Rates & Policies</p>
-            <p style={{ margin: 0, cursor: "pointer" }}>Customer Support</p>
-          </div>
-        </div>
-        <div style={{ borderTop: "1px solid #374151", paddingTop: "20px", textAlign: "center", fontSize: "12px" }}>
-          <p style={{ margin: "0 0 5px 0" }}>© 2026 The Style Loft Storefront ({country} Region). All Rights Reserved.</p>
-          <p style={{ margin: 0 }}>Optimized for High-Speed Browsing Across All Devices & Browsers.</p>
-        </div>
-      </footer>
-
+      {/* Footer Component */}
+      <Footer />
     </div>
   );
 }

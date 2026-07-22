@@ -1,49 +1,35 @@
-"use client";
-
-interface MediaProps {
-    url: string;
-    type: "image" | "video";
+interface MediaDisplayProps {
+    url?: string;
+    type?: "image" | "video";
     alt?: string;
-    className?: string;
-    style?: React.CSSProperties;
-    thumbnailOnly?: boolean;
+    controls?: boolean;
+    thumbnailOnly?: boolean; // Yeh prop add kar dein
 }
 
-export default function MediaDisplay({ url, type, alt = "media", style, thumbnailOnly = false }: MediaProps) {
-    if (type === "video") {
-        // Direct video files vs Google Drive preview links
-        const isDrivePreview = url.includes("drive.google.com");
+export default function MediaDisplay({ url, type = "image", alt = "Media", controls = true, thumbnailOnly = false }: MediaDisplayProps) {
+    if (!url) return null;
 
-        if (thumbnailOnly) {
-            return (
-                <div style={{ ...style, position: "relative", backgroundColor: "#000", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", cursor: "pointer" }}>
-                    <span style={{ fontSize: "14px" }}>▶️</span>
-                    <span style={{ position: "absolute", bottom: "2px", fontSize: "9px", background: "rgba(0,0,0,0.7)", padding: "1px 4px", borderRadius: "2px" }}>VIDEO</span>
-                </div>
-            );
-        }
-
-        return isDrivePreview ? (
-            <iframe 
-                src={url} 
-                style={{ width: "100%", height: "100%", border: "none", borderRadius: "6px", ...style }} 
-                allow="autoplay; encrypted-media"
-                allowFullScreen
-            />
-        ) : (
-            <video 
-                src={url} 
-                controls 
-                style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "6px", ...style }} 
-            />
+    // Agar thumbnailOnly true hai toh sirf choti image/video preview dikhayein
+    if (thumbnailOnly) {
+        return (
+            <div style={{ width: "100%", height: "100%", overflow: "hidden", position: "relative" }}>
+                {type === "video" ? (
+                    <video src={url} style={{ width: "100%", height: "100%", objectFit: "cover" }} muted />
+                ) : (
+                    <img src={url} alt={alt} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                )}
+            </div>
         );
     }
 
+    // Normal full display view
     return (
-        <img 
-            src={url} 
-            alt={alt} 
-            style={{ width: "100%", height: "100%", objectFit: "cover", ...style }} 
-        />
+        <div style={{ width: "100%", height: "100%", overflow: "hidden" }}>
+            {type === "video" ? (
+                <video src={url} controls={controls} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            ) : (
+                <img src={url} alt={alt} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            )}
+        </div>
     );
 }
