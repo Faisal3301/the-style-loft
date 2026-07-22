@@ -380,7 +380,7 @@ export default function TheStyleLoftClientDashboard() {
           <div>
             <h4 style={{ color: "#fff", fontSize: "14px", marginBottom: "12px" }}>Get to Know Us</h4>
             <p style={{ margin: "0 0 6px 0", cursor: "pointer" }}>About The Style Loft</p>
-            {/* <p style={{ margin: "0 0 6px 0", cursor: "pointer" }}>Careers & Culture</p> */}
+            <p style={{ margin: "0 0 6px 0", cursor: "pointer" }}>Careers & Culture</p>
             <p style={{ margin: 0, cursor: "pointer" }}>Global Operations ({country})</p>
           </div>
           <div>
