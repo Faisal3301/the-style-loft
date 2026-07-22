@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Content } from "next/font/google";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -96,7 +97,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     borderBottom: "1px solid #e2e8f0", 
                     display: "flex", 
                     alignItems: "center", 
-                    justify: "space-between", 
+                    justifyContent: "space-between", 
                     padding: "0 20px",
                     position: "sticky",
                     top: 0,
