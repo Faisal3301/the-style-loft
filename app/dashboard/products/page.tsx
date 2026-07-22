@@ -110,6 +110,7 @@ export default function AutoImportProductsPage() {
     };
 
     // ⚡ BULK AUTO-IMPORT DRIVE FILES TO FIRESTORE ⚡
+   // ⚡ BULK AUTO-IMPORT DRIVE FILES TO FIRESTORE ⚡
     const handleAutoImportDriveFiles = async () => {
         const driveUrl = getActiveDriveLink();
         if (!driveUrl) {
@@ -121,11 +122,39 @@ export default function AutoImportProductsPage() {
         setImporting(true);
 
         try {
-            // 1. Fetch files from Google Drive API
-            const res = await fetch(`/api/drive?folderId=${folderId}`);
+            // 1. Fetch files directly from Google Drive API using Client-Side API Key
+            const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_DRIVE_API_KEY;
+            if (!API_KEY) {
+                alert("Google Drive API Key (NEXT_PUBLIC_GOOGLE_DRIVE_API_KEY) missing hai .env file mein!");
+                setImporting(false);
+                return;
+            }
+
+            const driveApiUrl = `https://www.googleapis.com/drive/v3/files?q='${folderId}'+in+parents+and+trashed=false&fields=files(id,name,mimeType)&key=${API_KEY}`;
+            
+            const res = await fetch(driveApiUrl);
             const data = await res.json();
 
-            if (!data.success || !data.files || data.files.length === 0) {
+            if (data.error) {
+                console.error("Drive API Error:", data.error.message);
+                alert(`Drive API Error: ${data.error.message}`);
+                setImporting(false);
+                return;
+            }
+
+            const filesList = (data.files || []).map((file: any) => {
+                const isVideo = file.mimeType.includes("video") || file.name.match(/\.(mp4|mov|avi|mkv|webm)$/i);
+                return {
+                    id: file.id,
+                    name: file.name,
+                    type: isVideo ? "video" : "image",
+                    url: isVideo 
+                        ? `https://drive.google.com/file/d/${file.id}/preview` 
+                        : `https://lh3.googleusercontent.com/d/${file.id}=s1000`
+                };
+            });
+
+            if (filesList.length === 0) {
                 alert("Drive folder khali hai ya access issue hai.");
                 setImporting(false);
                 return;
@@ -133,7 +162,7 @@ export default function AutoImportProductsPage() {
 
             // Filter out files that are already imported to prevent duplicates
             const existingFileIds = new Set(products.map(p => p.driveFileId));
-            const newFiles = data.files.filter((f: any) => !existingFileIds.has(f.id));
+            const newFiles = filesList.filter((f: any) => !existingFileIds.has(f.id));
 
             if (newFiles.length === 0) {
                 alert("Iss folder ki tamam images pehle se import ho chuki hain!");
