@@ -64,24 +64,24 @@ export default function Sidebar({
       )}
 
       {/* Sidebar Drawer Container */}
-      <aside style={{
-        position: "fixed",
-        top: "65px",
-        left: 0,
-        height: "calc(100vh - 65px)",
-        width: "260px",
-        backgroundColor: "#ffffff",
-        zIndex: 999,
-        transform: isSidebarOpen ? "translateX(0)" : "translateX(-100%)",
-        transition: "transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
-        boxShadow: isSidebarOpen ? "4px 0 20px rgba(0,0,0,0.2)" : "none",
-        overflowY: "auto",
-        boxSizing: "border-box",
-        padding: "14px",
-        display: "flex",
-        flexDirection: "column",
-        gap: "10px"
-      }}>
+     <aside style={{
+    position: "fixed",
+    top: 0,
+    left: 0,
+    height: "100vh",
+    width: "260px",
+    backgroundColor: "#ffffff",
+    zIndex: 99999, // Header se zyada zIndex taake yeh sab ke upar aaye
+    transform: isSidebarOpen ? "translateX(0)" : "translateX(-100%)",
+    transition: "transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
+    boxShadow: isSidebarOpen ? "4px 0 20px rgba(0,0,0,0.3)" : "none",
+    overflowY: "auto",
+    boxSizing: "border-box",
+    padding: "20px 14px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "10px"
+}}>
         
         {/* Header Title & Close Button */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "2px solid #f59e0b", paddingBottom: "8px", flexShrink: 0 }}>
