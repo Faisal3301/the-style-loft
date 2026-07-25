@@ -49,39 +49,42 @@ export default function Sidebar({
         }
       `}</style>
 
-      {/* Backdrop: Jab sidebar khuli ho toh background dark ho jaye */}
+      {/* Backdrop: Yeh black shade wali layer hai jo click hone pe sidebar band karegi */}
       {isSidebarOpen && (
         <div 
           onClick={() => setIsSidebarOpen && setIsSidebarOpen(false)}
           style={{
             position: "fixed",
-            inset: 0,
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
             backgroundColor: "rgba(0, 0, 0, 0.5)",
-            zIndex: 998,
+            zIndex: 99998, /* Sidebar se theek pehle */
             backdropFilter: "blur(2px)",
           }}
         />
       )}
 
       {/* Sidebar Drawer Container */}
-     <aside style={{
-    position: "fixed",
-    top: 0,
-    left: 0,
-    height: "100vh",
-    width: "260px",
-    backgroundColor: "#ffffff",
-    zIndex: 99999, // Header se zyada zIndex taake yeh sab ke upar aaye
-    transform: isSidebarOpen ? "translateX(0)" : "translateX(-100%)",
-    transition: "transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
-    boxShadow: isSidebarOpen ? "4px 0 20px rgba(0,0,0,0.3)" : "none",
-    overflowY: "auto",
-    boxSizing: "border-box",
-    padding: "20px 14px",
-    display: "flex",
-    flexDirection: "column",
-    gap: "10px"
-}}>
+      <aside style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        height: "100vh",
+        width: "260px",
+        backgroundColor: "#ffffff",
+        zIndex: 99999, /* Backdrop se upar */
+        transform: isSidebarOpen ? "translateX(0)" : "translateX(-100%)",
+        transition: "transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
+        boxShadow: isSidebarOpen ? "4px 0 20px rgba(0,0,0,0.3)" : "none",
+        overflowY: "auto",
+        boxSizing: "border-box",
+        padding: "20px 14px",
+        display: "flex",
+        flexDirection: "column",
+        gap: "10px"
+      }}>
         
         {/* Header Title & Close Button */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "2px solid #f59e0b", paddingBottom: "8px", flexShrink: 0 }}>
@@ -92,10 +95,23 @@ export default function Sidebar({
             <span style={{ fontSize: "10px", backgroundColor: "#fef3c7", color: "#92400e", padding: "2px 6px", borderRadius: "4px", fontWeight: "bold" }}>
               {Array.isArray(categoriesList) ? categoriesList.length : 0}
             </span>
+            {/* Close Button '✕' */}
             {setIsSidebarOpen && (
               <button 
                 onClick={() => setIsSidebarOpen(false)}
-                style={{ background: "#f1f5f9", border: "none", borderRadius: "6px", width: "24px", height: "24px", cursor: "pointer", fontWeight: "bold", color: "#64748b", display: "flex", alignItems: "center", justifyContent: "center" }}
+                style={{ 
+                  background: "#f1f5f9", 
+                  border: "none", 
+                  borderRadius: "6px", 
+                  width: "24px", 
+                  height: "24px", 
+                  cursor: "pointer", 
+                  fontWeight: "bold", 
+                  color: "#64748b", 
+                  display: "flex", 
+                  alignItems: "center", 
+                  justifyContent: "center" 
+                }}
               >
                 ✕
               </button>
@@ -110,7 +126,7 @@ export default function Sidebar({
               setSelectedCategoryFilter("ALL"); 
               setSelectedSubCategoryFilter("ALL"); 
               setVisibleCount(12); 
-              if(setIsSidebarOpen) setIsSidebarOpen(false);
+              // Removed: if(setIsSidebarOpen) setIsSidebarOpen(false); -> Taa ke khud close na ho
             }}
             className="sidebar-btn"
             style={{ 
@@ -140,7 +156,7 @@ export default function Sidebar({
                   setSelectedCategoryFilter(cat.name); 
                   setSelectedSubCategoryFilter("ALL"); 
                   setVisibleCount(12); 
-                  if(setIsSidebarOpen) setIsSidebarOpen(false);
+                  // Removed auto-close
                 }}
                 className="sidebar-btn"
                 style={{ 
@@ -176,7 +192,7 @@ export default function Sidebar({
                 onClick={() => { 
                   setSelectedSubCategoryFilter("ALL"); 
                   setVisibleCount(12); 
-                  if(setIsSidebarOpen) setIsSidebarOpen(false);
+                  // Removed auto-close
                 }}
                 className="sub-cat-item"
                 style={{ 
@@ -201,7 +217,7 @@ export default function Sidebar({
                     onClick={() => { 
                       setSelectedSubCategoryFilter(sub.name); 
                       setVisibleCount(12); 
-                      if(setIsSidebarOpen) setIsSidebarOpen(false);
+                      // Removed auto-close
                     }}
                     className="sub-cat-item"
                     style={{ 
@@ -210,7 +226,7 @@ export default function Sidebar({
                       borderRadius: "6px", 
                       cursor: "pointer", 
                       backgroundColor: isSubActive ? "#f1f5f9" : "transparent", 
-                      color: isSubDataActive(isSubActive) ? "#0f172a" : "#64748b", // Safe fallback check
+                      color: isSubDataActive(isSubActive) ? "#0f172a" : "#64748b", 
                       fontWeight: isSubActive ? "bold" : "500",
                       borderLeft: isSubActive ? "3px solid #f59e0b" : "3px solid transparent"
                     }}

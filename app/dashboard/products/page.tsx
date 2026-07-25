@@ -1,15 +1,15 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { db } from "../../config/firebase"; 
-import { 
-    collection, 
-    addDoc, 
-    getDocs, 
-    deleteDoc, 
+import { db } from "../../config/firebase";
+import {
+    collection,
+    addDoc,
+    getDocs,
+    deleteDoc,
     updateDoc,
-    doc, 
-    serverTimestamp 
+    doc,
+    serverTimestamp
 } from "firebase/firestore";
 import MediaDisplay from "../../components/MediaDisplay";
 
@@ -51,7 +51,8 @@ export default function AutoImportProductsPage() {
     const [defaultPrice, setDefaultPrice] = useState("0");
 
     // Cloudinary Manual Upload State
-    const [cloudinaryFile, setCloudinaryFile] = useState<File | null>(null);
+    const [cloudinaryFiles, setCloudinaryFiles] = useState<File[]>([]);
+    const [uploadMode, setUploadMode] = useState<"files" | "folder">("files");
 
     // Filters & Smart Search States
     const [filterCategory, setFilterCategory] = useState("ALL");
@@ -144,8 +145,8 @@ export default function AutoImportProductsPage() {
                     id: file.id,
                     name: file.name,
                     type: isVideo ? "video" : "image",
-                    url: isVideo 
-                        ? `https://drive.google.com/file/d/${file.id}/preview` 
+                    url: isVideo
+                        ? `https://drive.google.com/file/d/${file.id}/preview`
                         : `https://lh3.googleusercontent.com/d/${file.id}=s1000`
                 };
             });
@@ -196,11 +197,13 @@ export default function AutoImportProductsPage() {
         }
     };
 
-    // ☁️ CLOUDINARY UPLOAD HANDLER ☁️
+    // ☁️ MULTIPLE FILES & FOLDER CLOUDINARY UPLOAD HANDLER ☁️
     const handleCloudinaryUpload = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!cloudinaryFile) {
-            alert("Pehle koi file select karein!");
+
+        // Check if files are selected (using an array state like cloudinaryFiles[])
+        if (!cloudinaryFiles || cloudinaryFiles.length === 0) {
+            alert("Pehle koi file ya folder select karein!");
             return;
         }
         if (!selectedCategory || !selectedSubCategory) {
@@ -210,46 +213,50 @@ export default function AutoImportProductsPage() {
 
         setUploadingCloudinary(true);
         try {
-            const formData = new FormData();
-            formData.append("file", cloudinaryFile);
-            formData.append("upload_preset", process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "ml_default");
+            // Loop through all selected files/folder items
+            for (const file of cloudinaryFiles) {
+                const formData = new FormData();
+                formData.append("file", file);
+                formData.append("upload_preset", process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "ml_default");
 
-            const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-            const resourceType = cloudinaryFile.type.includes("video") ? "video" : "image";
+                const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+                const resourceType = file.type.includes("video") ? "video" : "image";
 
-            const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`, {
-                method: "POST",
-                body: formData,
-            });
-
-            const data = await res.json();
-            if (data.secure_url) {
-                const cleanName = cloudinaryFile.name.replace(/\.[^/.]+$/, "");
-                await addDoc(collection(db, "products"), {
-                    name: cleanName || "Cloudinary Item",
-                    price: parseFloat(defaultPrice) || 10,
-                    salePrice: null,
-                    description: "",
-                    offerDuration: "",
-                    category: selectedCategory,
-                    subCategory: selectedSubCategory,
-                    mediaUrl: data.secure_url,
-                    mediaType: resourceType,
-                    createdAt: serverTimestamp()
+                const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`, {
+                    method: "POST",
+                    body: formData,
                 });
-                alert("🚀 File successfully uploaded & saved to Database!");
-                setCloudinaryFile(null);
-                fetchData();
-            } else {
-                alert("Cloudinary upload failed.");
+
+                const data = await res.json();
+                if (data.secure_url) {
+                    const cleanName = file.name.replace(/\.[^/.]+$/, "");
+                    await addDoc(collection(db, "products"), {
+                        name: cleanName || "Cloudinary Item",
+                        price: parseFloat(defaultPrice) || 10,
+                        salePrice: null,
+                        description: "",
+                        offerDuration: "",
+                        category: selectedCategory,
+                        subCategory: selectedSubCategory,
+                        mediaUrl: data.secure_url,
+                        mediaType: resourceType,
+                        createdAt: serverTimestamp()
+                    });
+                }
             }
+
+            alert(`🚀 All ${cloudinaryFiles.length} files successfully uploaded & saved to Database!`);
+            setCloudinaryFiles([]); // Reset state
+            fetchData();
         } catch (error) {
             console.error("Cloudinary Error:", error);
-            alert("Error uploading to Cloudinary.");
+            alert("Error uploading files to Cloudinary.");
         } finally {
             setUploadingCloudinary(false);
         }
     };
+
+
 
     // ✏️ UPDATE PRODUCT HANDLER
     const handleUpdateProduct = async (e: React.FormEvent) => {
@@ -289,7 +296,7 @@ export default function AutoImportProductsPage() {
     // 🗑️ BULK DELETE ALL PRODUCTS
     const handleDeleteAllProducts = async () => {
         if (!confirm("⚠️ KHATRA: Kya aap tamam products ko delete karna chahte hain? Yeh amal wapas nahi ho sakta!")) return;
-        
+
         try {
             const snap = await getDocs(collection(db, "products"));
             const deletePromises = snap.docs.map((docSnap) => deleteDoc(doc(db, "products", docSnap.id)));
@@ -336,7 +343,7 @@ export default function AutoImportProductsPage() {
 
     return (
         <div style={{ padding: "30px", maxWidth: "1400px", margin: "0 auto", backgroundColor: "#f8fafc", minHeight: "100vh", fontFamily: "Inter, sans-serif" }}>
-            
+
             {/* Header */}
             <div style={{ marginBottom: "30px", background: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)", padding: "25px", borderRadius: "12px", color: "#fff", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
@@ -348,7 +355,7 @@ export default function AutoImportProductsPage() {
                     </p>
                 </div>
                 {products.length > 0 && (
-                    <button 
+                    <button
                         onClick={handleDeleteAllProducts}
                         style={{ backgroundColor: "#ef4444", color: "#fff", border: "none", padding: "10px 16px", borderRadius: "8px", fontWeight: "700", cursor: "pointer", fontSize: "13px" }}
                     >
@@ -358,10 +365,10 @@ export default function AutoImportProductsPage() {
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "380px 1fr", gap: "25px" }}>
-                
+
                 {/* LEFT CONTROL PANEL */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-                    
+
                     {/* Common Settings Card (Category & Sub-Category selection) */}
                     <div style={cardStyle}>
                         <h2 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "15px", color: "#1e293b", borderBottom: "2px solid #3b82f6", paddingBottom: "8px" }}>
@@ -398,16 +405,16 @@ export default function AutoImportProductsPage() {
                         <h2 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "15px", color: "#1e293b", borderBottom: "2px solid #3b82f6", paddingBottom: "8px" }}>
                             📁 Google Drive Auto-Importer
                         </h2>
-                        <button 
-                            onClick={handleAutoImportDriveFiles} 
+                        <button
+                            onClick={handleAutoImportDriveFiles}
                             disabled={importing || !selectedSubCategory || !getActiveDriveLink()}
-                            style={{ 
+                            style={{
                                 width: "100%",
-                                backgroundColor: importing ? "#94a3b8" : "#2563eb", 
-                                color: "#fff", 
-                                padding: "12px", 
-                                borderRadius: "8px", 
-                                fontWeight: "700", 
+                                backgroundColor: importing ? "#94a3b8" : "#2563eb",
+                                color: "#fff",
+                                padding: "12px",
+                                borderRadius: "8px",
+                                fontWeight: "700",
                                 border: "none",
                                 cursor: importing ? "not-allowed" : "pointer"
                             }}
@@ -417,39 +424,102 @@ export default function AutoImportProductsPage() {
                     </div>
 
                     {/* Cloudinary Manual Upload Card */}
-                    <div style={cardStyle}>
-                        <h2 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "15px", color: "#1e293b", borderBottom: "2px solid #10b981", paddingBottom: "8px" }}>
-                            ☁️ Direct Cloudinary Upload
-                        </h2>
-                        <form onSubmit={handleCloudinaryUpload} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                            <div>
-                                <label style={labelStyle}>Select File (Image / Video)</label>
-                                <input 
-                                    type="file" 
-                                    accept="image/*,video/*"
-                                    onChange={(e) => setCloudinaryFile(e.target.files?.[0] || null)} 
-                                    style={{ ...inputStyle, padding: "6px" }} 
-                                />
+                    <form onSubmit={handleCloudinaryUpload} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                        <div>
+                            <label style={labelStyle}>Select Files or Folder (Images / Videos)</label>
+
+                            {/* Option switch / toggle */}
+                            <div style={{ display: "flex", gap: "10px", marginBottom: "8px", marginTop: "4px" }}>
+                                <button
+                                    type="button"
+                                    onClick={() => setUploadMode("files")}
+                                    style={{
+                                        padding: "4px 10px",
+                                        fontSize: "11px",
+                                        borderRadius: "6px",
+                                        border: "none",
+                                        backgroundColor: uploadMode === "files" ? "#10b981" : "#e2e8f0",
+                                        color: uploadMode === "files" ? "#fff" : "#64748b",
+                                        cursor: "pointer",
+                                        fontWeight: "bold"
+                                    }}
+                                >
+                                    Multiple Files
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setUploadMode("folder")}
+                                    style={{
+                                        padding: "4px 10px",
+                                        fontSize: "11px",
+                                        borderRadius: "6px",
+                                        border: "none",
+                                        backgroundColor: uploadMode === "folder" ? "#10b981" : "#e2e8f0",
+                                        color: uploadMode === "folder" ? "#fff" : "#64748b",
+                                        cursor: "pointer",
+                                        fontWeight: "bold"
+                                    }}
+                                >
+                                    Complete Folder
+                                </button>
                             </div>
-                            <button 
-                                type="submit"
-                                disabled={uploadingCloudinary || !cloudinaryFile}
-                                style={{ 
-                                    backgroundColor: uploadingCloudinary ? "#94a3b8" : "#10b981", 
-                                    color: "#fff", 
-                                    padding: "12px", 
-                                    borderRadius: "8px", 
-                                    fontWeight: "700", 
-                                    border: "none",
-                                    cursor: uploadingCloudinary ? "not-allowed" : "pointer"
-                                }}
-                            >
-                                {uploadingCloudinary ? "📤 Uploading..." : "☁️ Upload & Save"}
-                            </button>
-                        </form>
-                    </div>
+
+                            {/* Dynamic File Input */}
+                            {uploadMode === "folder" ? (
+                                <input
+                                    type="file"
+                                    // @ts-ignore
+                                    webkitdirectory="true"
+                                    directory=""
+                                    accept="image/*,video/*"
+                                    onChange={(e) => {
+                                        if (e.target.files) {
+                                            setCloudinaryFiles(Array.from(e.target.files));
+                                        }
+                                    }}
+                                    style={{ ...inputStyle, padding: "6px" }}
+                                />
+                            ) : (
+                                <input
+                                    type="file"
+                                    multiple
+                                    accept="image/*,video/*"
+                                    onChange={(e) => {
+                                        if (e.target.files) {
+                                            setCloudinaryFiles(Array.from(e.target.files));
+                                        }
+                                    }}
+                                    style={{ ...inputStyle, padding: "6px" }}
+                                />
+                            )}
+
+                            {/* Safe check with optional chaining */}
+                            {(cloudinaryFiles?.length ?? 0) > 0 && (
+                                <p style={{ fontSize: "12px", color: "#10b981", fontWeight: "600", marginTop: "6px" }}>
+                                    📁 {cloudinaryFiles.length} files selected
+                                </p>
+                            )}
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={uploadingCloudinary || !cloudinaryFiles || cloudinaryFiles.length === 0}
+                            style={{
+                                backgroundColor: (uploadingCloudinary || !cloudinaryFiles || cloudinaryFiles.length === 0) ? "#94a3b8" : "#10b981",
+                                color: "#fff",
+                                padding: "12px",
+                                borderRadius: "8px",
+                                fontWeight: "700",
+                                border: "none",
+                                cursor: (uploadingCloudinary || !cloudinaryFiles || cloudinaryFiles.length === 0) ? "not-allowed" : "pointer"
+                            }}
+                        >
+                            {uploadingCloudinary ? "📤 Uploading Files..." : "☁️ Upload All & Save"}
+                        </button>
+                    </form>
 
                 </div>
+
 
                 {/* RIGHT PANEL: Inventory Stock Table & Search */}
                 <div style={cardStyle}>
@@ -570,7 +640,7 @@ export default function AutoImportProductsPage() {
                                 <label style={labelStyle}>Product Title</label>
                                 <input type="text" value={editingProduct.name} onChange={(e) => setEditingProduct({ ...editingProduct, name: e.target.value })} style={inputStyle} required />
                             </div>
-                            
+
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
                                 <div>
                                     <label style={labelStyle}>Original Price ($)</label>
