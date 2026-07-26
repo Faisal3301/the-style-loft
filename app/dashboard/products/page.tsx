@@ -341,6 +341,36 @@ export default function AutoImportProductsPage() {
         }, {} as Record<string, Record<string, Product[]>>);
     }, [filteredProducts]);
 
+
+
+    // 1. Function ko yahan component ke andar (return se pehle) rakhein:
+    const resetAllPricesToZero = async () => {
+        try {
+
+            const querySnapshot = await getDocs(collection(db, "products")); // Agar collection ka naam kuch aur hai toh yahan change karein
+
+
+
+            if (querySnapshot.empty) {
+                alert("⚠️ Koi product nahi mili! Check karein ke collection ka naam 'products' hi hai ya nahi.");
+                return;
+            }
+
+            const updatePromises = querySnapshot.docs.map(async (productDoc) => {
+                const productRef = doc(db, "products", productDoc.id);
+                await updateDoc(productRef, {
+                    price: 0
+                });
+            });
+
+            await Promise.all(updatePromises);
+            alert("✅ Sab products ki price successfully 0 ho gayi hai!");
+        } catch (error: any) {
+
+            alert(`❌ Error: ${error.message || error}`);
+        }
+    };
+
     return (
         <div style={{ padding: "30px", maxWidth: "1400px", margin: "0 auto", backgroundColor: "#f8fafc", minHeight: "100vh", fontFamily: "Inter, sans-serif" }}>
 
@@ -403,23 +433,23 @@ export default function AutoImportProductsPage() {
                     {/* Google Drive Importer Card */}
                     <div style={cardStyle}>
                         <h2 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "15px", color: "#1e293b", borderBottom: "2px solid #3b82f6", paddingBottom: "8px" }}>
-                            📁 Google Drive Auto-Importer
+                            📁 Google Drive Auto-Importer & Price Reset
                         </h2>
+
                         <button
-                            onClick={handleAutoImportDriveFiles}
-                            disabled={importing || !selectedSubCategory || !getActiveDriveLink()}
+                            onClick={resetAllPricesToZero}
                             style={{
                                 width: "100%",
-                                backgroundColor: importing ? "#94a3b8" : "#2563eb",
+                                backgroundColor: "#ef4444",
                                 color: "#fff",
                                 padding: "12px",
                                 borderRadius: "8px",
                                 fontWeight: "700",
                                 border: "none",
-                                cursor: importing ? "not-allowed" : "pointer"
+                                cursor: "pointer"
                             }}
                         >
-                            {importing ? "⏳ Importing from Drive..." : "🚀 Import All Drive Files"}
+                            🔄 Reset All Products Price to 0
                         </button>
                     </div>
 

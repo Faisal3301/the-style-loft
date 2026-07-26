@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { auth, db } from "./../config/firebase";
+import { auth, db } from "../config/firebase";
 import { 
     signInWithEmailAndPassword, 
     createUserWithEmailAndPassword, 
@@ -11,8 +11,8 @@ import {
 } from "firebase/auth";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import Header from "./../components/Header";
-import Footer from "./../components/Footer";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
 
 export default function SignInPage() {
     const [isSignUp, setIsSignUp] = useState(false);

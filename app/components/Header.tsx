@@ -229,7 +229,7 @@ export default function Header({
                             )}
                         </div>
                     ) : (
-                        <Link href="/signin" style={{ textDecoration: "none" }}>
+                        <Link href="/login" style={{ textDecoration: "none" }}>
                             <div
                                 className="nav-hover"
                                 style={{ display: "flex", alignItems: "center", gap: "5px", background: "#1e293b", padding: "7px 10px", borderRadius: "8px", cursor: "pointer", border: "1px solid #334155", color: "#e2e8f0", fontSize: "12px", fontWeight: "600" }}
