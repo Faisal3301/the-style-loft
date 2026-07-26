@@ -77,8 +77,8 @@ export default function ProductClient({ params }: { params: { id: string } }) {
 
                 if (docSnap.exists()) {
                     const data = docSnap.data();
-                    const prodData = { 
-                        id: docSnap.id, 
+                    const prodData = {
+                        id: docSnap.id,
                         ...data,
                         name: data.name || data.title || "The Style Loft Product",
                         mediaUrl: data.mediaUrl || data.imageUrl || data.image || ""
@@ -91,8 +91,8 @@ export default function ProductClient({ params }: { params: { id: string } }) {
                     prodSnap.forEach((d) => {
                         if (d.id !== productId) {
                             const dData = d.data();
-                            allItems.push({ 
-                                id: d.id, 
+                            allItems.push({
+                                id: d.id,
                                 ...dData,
                                 name: dData.name || dData.title || "Product",
                                 mediaUrl: dData.mediaUrl || dData.imageUrl || dData.image || ""
@@ -169,47 +169,47 @@ export default function ProductClient({ params }: { params: { id: string } }) {
     return (
         <div className="page-root">
             {/* Header */}
-            <Header 
-                cartCount={cartCount} 
-                country="UK" 
-                setCountry={() => {}} 
-                searchQuery={searchQuery} 
-                setSearchQuery={setSearchQuery} 
-                selectedCategoryFilter={selectedCategoryFilter} 
-                setSelectedCategoryFilter={setSelectedCategoryFilter} 
-                setSelectedSubCategoryFilter={setSelectedSubCategory} 
-                setVisibleCount={() => {}} 
-                categoriesList={categoriesList} 
-                isSidebarOpen={isSidebarOpen} 
-                setIsSidebarOpen={setIsSidebarOpen} 
+            <Header
+                cartCount={cartCount}
+                country="UK"
+                setCountry={() => { }}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                selectedCategoryFilter={selectedCategoryFilter}
+                setSelectedCategoryFilter={setSelectedCategoryFilter}
+                setSelectedSubCategoryFilter={setSelectedSubCategory}
+                setVisibleCount={() => { }}
+                categoriesList={categoriesList}
+                isSidebarOpen={isSidebarOpen}
+                setIsSidebarOpen={setIsSidebarOpen}
             />
 
             <div className="dashboard-container">
                 <aside className="desktop-sidebar">
-                    <Sidebar 
-                        isSidebarOpen={isSidebarOpen} 
-                        categoriesList={categoriesList} 
-                        selectedCategoryFilter={selectedCategoryFilter} 
-                        setSelectedCategoryFilter={setSelectedCategoryFilter} 
-                        selectedSubCategoryFilter={selectedSubCategory} 
-                        setSelectedSubCategoryFilter={setSelectedSubCategory} 
-                        setVisibleCount={() => {}} 
-                        activeCatObj={activeCatObj} 
+                    <Sidebar
+                        isSidebarOpen={isSidebarOpen}
+                        categoriesList={categoriesList}
+                        selectedCategoryFilter={selectedCategoryFilter}
+                        setSelectedCategoryFilter={setSelectedCategoryFilter}
+                        selectedSubCategoryFilter={selectedSubCategory}
+                        setSelectedSubCategoryFilter={setSelectedSubCategory}
+                        setVisibleCount={() => { }}
+                        activeCatObj={activeCatObj}
                         setIsSidebarOpen={setIsSidebarOpen}
                     />
                 </aside>
 
                 {/* Mobile Sidebar rendered globally for drawer functionality */}
                 <div className="mobile-sidebar-container">
-                    <Sidebar 
-                        isSidebarOpen={isSidebarOpen} 
-                        categoriesList={categoriesList} 
-                        selectedCategoryFilter={selectedCategoryFilter} 
-                        setSelectedCategoryFilter={setSelectedCategoryFilter} 
-                        selectedSubCategoryFilter={selectedSubCategory} 
-                        setSelectedSubCategoryFilter={setSelectedSubCategory} 
-                        setVisibleCount={() => {}} 
-                        activeCatObj={activeCatObj} 
+                    <Sidebar
+                        isSidebarOpen={isSidebarOpen}
+                        categoriesList={categoriesList}
+                        selectedCategoryFilter={selectedCategoryFilter}
+                        setSelectedCategoryFilter={setSelectedCategoryFilter}
+                        selectedSubCategoryFilter={selectedSubCategory}
+                        setSelectedSubCategoryFilter={setSelectedSubCategory}
+                        setVisibleCount={() => { }}
+                        activeCatObj={activeCatObj}
                         setIsSidebarOpen={setIsSidebarOpen}
                     />
                 </div>
@@ -221,22 +221,22 @@ export default function ProductClient({ params }: { params: { id: string } }) {
                             <ProductGallery mediaUrl={product.mediaUrl} mediaType={product.mediaType} name={product.name} />
                         </div>
                         <div className="info-wrapper">
-                            <ProductInfo 
-                                product={product} 
+                            <ProductInfo
+                                product={product}
                                 averageRating={averageRating.toString()}
-                                totalReviews={comments.length} 
-                                cartCount={cartCount} 
-                                onAddToCart={handleAddToCart} 
-                                onOpenChat={() => setChatOpen(true)} 
+                                totalReviews={comments.length}
+                                cartCount={cartCount}
+                                onAddToCart={handleAddToCart}
+                                onOpenChat={() => setChatOpen(true)}
                             />
                         </div>
                     </div>
 
                     {/* 2. Related Products Grid */}
-                    <RelatedProducts 
-                        products={displayedRelatedProducts} 
-                        category={selectedCategoryFilter} 
-                        subCategory={selectedSubCategory} 
+                    <RelatedProducts
+                        products={displayedRelatedProducts}
+                        category={selectedCategoryFilter}
+                        subCategory={selectedSubCategory}
                     />
 
                     {/* 3. Customer Reviews */}

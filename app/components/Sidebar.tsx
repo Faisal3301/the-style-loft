@@ -5,10 +5,10 @@ interface SidebarProps {
   categoriesList: any[];
   selectedCategoryFilter: string;
   setSelectedCategoryFilter: (val: string) => void;
-  selectedSubCategoryFilter: string;
-  setSelectedSubCategoryFilter: (val: string) => void;
-  setVisibleCount: (val: number) => void;
-  activeCatObj: any;
+  selectedSubCategoryFilter?: string;
+  setSelectedSubCategoryFilter?: (val: string) => void;
+  setVisibleCount?: (val: number) => void; // 👈 Iske sath '?' laga dein
+  activeCatObj?: any;                     // 👈 Iske sath '?' laga dein
   setIsSidebarOpen?: (val: boolean) => void;
 }
 
@@ -51,7 +51,7 @@ export default function Sidebar({
 
       {/* Backdrop: Yeh black shade wali layer hai jo click hone pe sidebar band karegi */}
       {isSidebarOpen && (
-        <div 
+        <div
           onClick={() => setIsSidebarOpen && setIsSidebarOpen(false)}
           style={{
             position: "fixed",
@@ -85,7 +85,7 @@ export default function Sidebar({
         flexDirection: "column",
         gap: "10px"
       }}>
-        
+
         {/* Header Title & Close Button */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "2px solid #f59e0b", paddingBottom: "8px", flexShrink: 0 }}>
           <h3 style={{ fontSize: "14px", fontWeight: "900", color: "#0f172a", margin: 0 }}>
@@ -97,20 +97,20 @@ export default function Sidebar({
             </span>
             {/* Close Button '✕' */}
             {setIsSidebarOpen && (
-              <button 
+              <button
                 onClick={() => setIsSidebarOpen(false)}
-                style={{ 
-                  background: "#f1f5f9", 
-                  border: "none", 
-                  borderRadius: "6px", 
-                  width: "24px", 
-                  height: "24px", 
-                  cursor: "pointer", 
-                  fontWeight: "bold", 
-                  color: "#64748b", 
-                  display: "flex", 
-                  alignItems: "center", 
-                  justifyContent: "center" 
+                style={{
+                  background: "#f1f5f9",
+                  border: "none",
+                  borderRadius: "6px",
+                  width: "24px",
+                  height: "24px",
+                  cursor: "pointer",
+                  fontWeight: "bold",
+                  color: "#64748b",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center"
                 }}
               >
                 ✕
@@ -122,21 +122,21 @@ export default function Sidebar({
         {/* Main Categories List */}
         <div style={{ display: "flex", flexDirection: "column", gap: "4px", flexShrink: 0 }}>
           <button
-            onClick={() => { 
-              setSelectedCategoryFilter("ALL"); 
-              setSelectedSubCategoryFilter("ALL"); 
-              setVisibleCount(12); 
+            onClick={() => {
+              setSelectedCategoryFilter("ALL");
+              setSelectedSubCategoryFilter?.("ALL");
+              setVisibleCount?.(12);
               // Removed: if(setIsSidebarOpen) setIsSidebarOpen(false); -> Taa ke khud close na ho
             }}
             className="sidebar-btn"
-            style={{ 
-              textAlign: "left", 
-              padding: "9px 12px", 
-              borderRadius: "8px", 
-              background: selectedCategoryFilter === "ALL" ? "#eff6ff" : "transparent", 
-              color: selectedCategoryFilter === "ALL" ? "#2563eb" : "#475569", 
-              fontWeight: selectedCategoryFilter === "ALL" ? "800" : "600", 
-              cursor: "pointer", 
+            style={{
+              textAlign: "left",
+              padding: "9px 12px",
+              borderRadius: "8px",
+              background: selectedCategoryFilter === "ALL" ? "#eff6ff" : "transparent",
+              color: selectedCategoryFilter === "ALL" ? "#2563eb" : "#475569",
+              fontWeight: selectedCategoryFilter === "ALL" ? "800" : "600",
+              cursor: "pointer",
               fontSize: "12px",
               display: "flex",
               alignItems: "center",
@@ -152,21 +152,21 @@ export default function Sidebar({
             return (
               <button
                 key={cat.id}
-                onClick={() => { 
-                  setSelectedCategoryFilter(cat.name); 
-                  setSelectedSubCategoryFilter("ALL"); 
-                  setVisibleCount(12); 
+                onClick={() => {
+                  setSelectedCategoryFilter(cat.name);
+                  setSelectedSubCategoryFilter?.("ALL");
+                  setVisibleCount?.(12);
                   // Removed auto-close
                 }}
                 className="sidebar-btn"
-                style={{ 
-                  textAlign: "left", 
-                  padding: "9px 12px", 
-                  borderRadius: "8px", 
-                  background: isActive ? "#eff6ff" : "transparent", 
-                  color: isActive ? "#2563eb" : "#475569", 
-                  fontWeight: isActive ? "800" : "600", 
-                  cursor: "pointer", 
+                style={{
+                  textAlign: "left",
+                  padding: "9px 12px",
+                  borderRadius: "8px",
+                  background: isActive ? "#eff6ff" : "transparent",
+                  color: isActive ? "#2563eb" : "#475569",
+                  fontWeight: isActive ? "800" : "600",
+                  cursor: "pointer",
                   fontSize: "12px",
                   display: "flex",
                   alignItems: "center",
@@ -186,21 +186,21 @@ export default function Sidebar({
             <h4 style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: "800", margin: "0 0 8px 0", color: "#64748b" }}>
               Sub-Categories ({activeCatObj.name})
             </h4>
-            
+
             <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
               <span
-                onClick={() => { 
-                  setSelectedSubCategoryFilter("ALL"); 
-                  setVisibleCount(12); 
+                onClick={() => {
+                  setSelectedSubCategoryFilter?.("ALL");
+                  setVisibleCount?.(12);
                   // Removed auto-close
                 }}
                 className="sub-cat-item"
-                style={{ 
-                  fontSize: "12px", 
-                  padding: "8px 10px", 
-                  borderRadius: "6px", 
-                  cursor: "pointer", 
-                  backgroundColor: selectedSubCategoryFilter === "ALL" ? "#f1f5f9" : "transparent", 
+                style={{
+                  fontSize: "12px",
+                  padding: "8px 10px",
+                  borderRadius: "6px",
+                  cursor: "pointer",
+                  backgroundColor: selectedSubCategoryFilter === "ALL" ? "#f1f5f9" : "transparent",
                   color: selectedSubCategoryFilter === "ALL" ? "#0f172a" : "#64748b",
                   fontWeight: selectedSubCategoryFilter === "ALL" ? "bold" : "500",
                   borderLeft: selectedSubCategoryFilter === "ALL" ? "3px solid #f59e0b" : "3px solid transparent"
@@ -214,19 +214,19 @@ export default function Sidebar({
                 return (
                   <span
                     key={i}
-                    onClick={() => { 
-                      setSelectedSubCategoryFilter(sub.name); 
-                      setVisibleCount(12); 
+                    onClick={() => {
+                      setSelectedSubCategoryFilter?.(sub.name);
+                      setVisibleCount?.(12);
                       // Removed auto-close
                     }}
                     className="sub-cat-item"
-                    style={{ 
-                      fontSize: "12px", 
-                      padding: "8px 10px", 
-                      borderRadius: "6px", 
-                      cursor: "pointer", 
-                      backgroundColor: isSubActive ? "#f1f5f9" : "transparent", 
-                      color: isSubDataActive(isSubActive) ? "#0f172a" : "#64748b", 
+                    style={{
+                      fontSize: "12px",
+                      padding: "8px 10px",
+                      borderRadius: "6px",
+                      cursor: "pointer",
+                      backgroundColor: isSubActive ? "#f1f5f9" : "transparent",
+                      color: isSubDataActive(isSubActive) ? "#0f172a" : "#64748b",
                       fontWeight: isSubActive ? "bold" : "500",
                       borderLeft: isSubActive ? "3px solid #f59e0b" : "3px solid transparent"
                     }}

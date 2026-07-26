@@ -5,8 +5,10 @@ import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
 import MediaDisplay from "./components/MediaDisplay";
 import Footer from "./components/Footer";
-import { db } from "./config/firebase";
-import { collection, getDocs, orderBy, query, deleteDoc, doc } from "firebase/firestore";
+import {auth, db } from "./config/firebase";
+import { collection, getDocs,onSnapshot, orderBy, query, deleteDoc, doc } from "firebase/firestore";
+import FloatingChatButton from "./components/product/FloatingChatButton";
+
 
 interface Product {
   id: string;
@@ -28,6 +30,12 @@ interface BannerPromotion {
   mediaType: "image" | "video";
   expiresAt?: number;
 }
+
+
+
+
+
+
 
 export default function TheStyleLoftClientDashboard() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -343,6 +351,22 @@ export default function TheStyleLoftClientDashboard() {
       )}
 
       <Footer />
+      {/* Footer Component */}
+           
+
+            {/* Floating Live Support Chat Button (Bottom Right Fixed) */}
+            <FloatingChatButton productName="The Style Loft Exclusive Collection" />
+
+            <style jsx global>{`
+                @media (max-width: 900px) {
+                    .desktop-sidebar-wrapper {
+                        display: none !important;
+                    }
+                    .main-layout-container {
+                        padding: 10px !important;
+                    }
+                }
+            `}</style>
     </div>
   );
 }
