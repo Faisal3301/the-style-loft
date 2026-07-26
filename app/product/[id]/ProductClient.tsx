@@ -248,63 +248,74 @@ export default function ProductClient({ params }: { params: { id: string } }) {
             <Footer />
 
             <style jsx>{`
-                .page-root {
-                    min-height: 100vh;
-                    display: flex;
-                    flex-direction: column;
-                    background: #f8fafc;
-                }
-                .dashboard-container {
-                    display: flex;
-                    gap: 24px;
-                    max-width: 1400px;
-                    margin: 0 auto;
-                    padding: 24px;
-                    box-sizing: border-box;
-                    width: 100%;
-                }
-                .desktop-sidebar {
-                    width: 260px;
-                    flex-shrink: 0;
-                }
-                .main-content-area {
-                    flex: 1;
-                    min-width: 0;
-                }
-                .product-showcase-card {
-                    display: grid;
-                    grid-template-columns: 1fr 1fr;
-                    gap: 30px;
-                    background: #ffffff;
-                    padding: 30px;
-                    border-radius: 16px;
-                    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-                    border: 1px solid #e2e8f0;
-                    margin-bottom: 30px;
-                    align-items: start;
-                }
-                .gallery-wrapper {
-                    width: 100%;
-                }
-                .info-wrapper {
-                    width: 100%;
-                }
-                @media (max-width: 1024px) {
-                    .desktop-sidebar {
-                        display: none;
-                    }
-                }
-                @media (max-width: 968px) {
-                    .product-showcase-card {
-                        grid-template-columns: 1fr !important;
-                        padding: 16px;
-                        gap: 20px;
-                    }
-                    .dashboard-container {
-                        padding: 12px;
-                    }
-                }
-            `}</style>
+    .page-root {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        background: #f8fafc;
+        overflow-x: hidden; /* Yeh ensure karega ke horizontal scroll na aaye */
+        width: 100%;
+        max-width: 100vw;
+    }
+    .dashboard-container {
+        display: flex;
+        gap: 24px;
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 24px;
+        box-sizing: border-box;
+        width: 100%;
+        overflow-x: hidden;
+    }
+    .desktop-sidebar {
+        width: 260px;
+        flex-shrink: 0;
+    }
+    .main-content-area {
+        flex: 1;
+        min-width: 0; /* Important: flex item ko overflow hone se rokta hai */
+        overflow-x: hidden;
+    }
+    .product-showcase-card {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+        background: #ffffff;
+        padding: 30px;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        border: 1px solid #e2e8f0;
+        margin-bottom: 30px;
+        align-items: start;
+        overflow-wrap: break-word;
+        word-break: break-word;
+    }
+    .gallery-wrapper {
+        width: 100%;
+        min-width: 0;
+    }
+    .info-wrapper {
+        width: 100%;
+        min-width: 0;
+        overflow-wrap: break-word;
+        word-break: break-word;
+    }
+    @media (max-width: 1024px) {
+        .desktop-sidebar {
+            display: none;
+        }
+    }
+    @media (max-width: 968px) {
+        .product-showcase-card {
+            grid-template-columns: 1fr !important;
+            padding: 16px;
+            gap: 20px;
+        }
+        .dashboard-container {
+            padding: 12px;
+        }
+    }
+`}</style>
         </div>
     );
 }
