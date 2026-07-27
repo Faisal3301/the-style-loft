@@ -5,10 +5,9 @@ import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
 import MediaDisplay from "./components/MediaDisplay";
 import Footer from "./components/Footer";
-import {auth, db } from "./config/firebase";
-import { collection, getDocs,onSnapshot, orderBy, query, deleteDoc, doc } from "firebase/firestore";
+import { auth, db } from "./config/firebase";
+import { collection, getDocs, onSnapshot, orderBy, query, deleteDoc, doc, updateDoc, increment } from "firebase/firestore";
 import FloatingChatButton from "./components/product/FloatingChatButton";
-
 
 interface Product {
   id: string;
@@ -31,12 +30,6 @@ interface BannerPromotion {
   expiresAt?: number;
 }
 
-
-
-
-
-
-
 export default function TheStyleLoftClientDashboard() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categoriesList, setCategoriesList] = useState<any[]>([]);
@@ -49,7 +42,7 @@ export default function TheStyleLoftClientDashboard() {
 
   const [activeBanners, setActiveBanners] = useState<BannerPromotion[]>([]);
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
-  const [previewMedia, setPreviewMedia] = useState<{ url: string; type: "image" | "video"; title: string } | null>(null);
+  const [previewMedia, setPreviewMedia] = useState<{ id?: string; url: string; type: "image" | "video"; title: string } | null>(null);
   const [visibleLimit, setVisibleLimit] = useState(12);
 
   const fetchData = async () => {
@@ -104,6 +97,7 @@ export default function TheStyleLoftClientDashboard() {
     document.title = "The Style Loft - Global Luxury Store";
   }, []);
 
+  // Banner rotation interval (5 seconds)
   useEffect(() => {
     if (activeBanners.length <= 1) return;
     const interval = setInterval(() => {
@@ -111,6 +105,40 @@ export default function TheStyleLoftClientDashboard() {
     }, 5000);
     return () => clearInterval(interval);
   }, [activeBanners.length]);
+
+  // Analytics Tracking: Views, Unique Visitors & Watch Time Counter for Current Banner
+  useEffect(() => {
+    if (activeBanners.length === 0) return;
+    const currentBanner = activeBanners[currentBannerIndex];
+
+    const trackBannerView = async () => {
+      try {
+        const bannerRef = doc(db, "promotional_banners", currentBanner.id);
+        await updateDoc(bannerRef, {
+          views: increment(1),
+          uniqueVisitors: increment(1)
+        });
+      } catch (err) {
+        console.error("Error tracking banner view:", err);
+      }
+    };
+
+    trackBannerView();
+
+    // Har 5 seconds banner screen par active rehne par watch time increment hoga
+    const watchTimer = setInterval(async () => {
+      try {
+        const bannerRef = doc(db, "promotional_banners", currentBanner.id);
+        await updateDoc(bannerRef, {
+          totalWatchTimeSeconds: increment(5)
+        });
+      } catch (err) {
+        console.error("Error tracking watch time:", err);
+      }
+    }, 5000);
+
+    return () => clearInterval(watchTimer);
+  }, [currentBannerIndex, activeBanners]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -238,7 +266,7 @@ export default function TheStyleLoftClientDashboard() {
                     <span>{String(timeLeftStr.seconds).padStart(2, '0')}s</span>
                   </div>
                   <button 
-                    onClick={() => setPreviewMedia({ url: currentBanner.mediaUrl, type: currentBanner.mediaType, title: currentBanner.title })}
+                    onClick={() => setPreviewMedia({ id: currentBanner.id, url: currentBanner.mediaUrl, type: currentBanner.mediaType, title: currentBanner.title })}
                     style={{ backgroundColor: "#f59e0b", color: "#0f172a", border: "none", padding: "6px 14px", borderRadius: "8px", fontSize: "12px", fontWeight: "900", cursor: "pointer" }}
                   >
                     View Full 🔍
@@ -344,29 +372,26 @@ export default function TheStyleLoftClientDashboard() {
               </button>
             </div>
             <div style={{ width: "100%", maxHeight: "75vh", display: "flex", justifyContent: "center", alignItems: "center", backgroundColor: "#000", borderRadius: "10px", overflow: "hidden" }}>
-              <img src={previewMedia.url} alt={previewMedia.title} style={{ maxWidth: "100%", maxHeight: "75vh", objectFit: "contain" }} />
+              <MediaDisplay url={previewMedia.url} type={previewMedia.type} alt={previewMedia.title} bannerId={previewMedia.id} controls={true} />
             </div>
           </div>
         </div>
       )}
 
       <Footer />
-      {/* Footer Component */}
-           
 
-            {/* Floating Live Support Chat Button (Bottom Right Fixed) */}
-            <FloatingChatButton productName="The Style Loft Exclusive Collection" />
+      <FloatingChatButton productName="The Style Loft Exclusive Collection" />
 
-            <style jsx global>{`
-                @media (max-width: 900px) {
-                    .desktop-sidebar-wrapper {
-                        display: none !important;
-                    }
-                    .main-layout-container {
-                        padding: 10px !important;
-                    }
-                }
-            `}</style>
+      <style jsx global>{`
+        @media (max-width: 900px) {
+            .desktop-sidebar-wrapper {
+                display: none !important;
+            }
+            .main-layout-container {
+                padding: 10px !important;
+            }
+        }
+      `}</style>
     </div>
   );
 }

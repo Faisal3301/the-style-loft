@@ -15,7 +15,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { name: "Sales & Offers", path: "/dashboard/promotions", icon: "🔥" },
         { name: "Client Emails & Bulk Mail", path: "/dashboard/email-marketing", icon: "✉️" },
         { name: "Live Chat", path: "/dashboard/chat", icon: "💬" },
-        { name: "Sales Reports", path: "/dashboard/sales-analytics", icon: "📈" }, // Live Chat ke neeche New Sales Tab
+        { name: "Sales Reports", path: "/dashboard/sales-analytics", icon: "📈" },// Live Chat ke neeche New Sales Tab
+        { name: "Happy Coustmer", path: "/dashboard/happy-customers", icon: "📈" }, 
     ];
 
     return (
