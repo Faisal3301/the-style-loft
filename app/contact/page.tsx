@@ -67,7 +67,7 @@ export default function ContactPage() {
                         <a href="mailto:support@thestyleloft.com" style={{ textDecoration: "none", background: "#f8fafc", padding: "22px", borderRadius: "12px", border: "1px solid #e2e8f0", textAlign: "center", color: "#0f172a", display: "block", transition: "all 0.2s" }}>
                             <div style={{ fontSize: "28px", marginBottom: "10px" }}>✉️</div>
                             <h3 style={{ fontSize: "17px", fontWeight: "800", marginBottom: "5px" }}>Email Us</h3>
-                            <p style={{ fontSize: "13px", color: "#64748b" }}>support@thestyleloft.com — Professional inquiries & global shipments.</p>
+                            <p style={{ fontSize: "13px", color: "#64748b" }}>thestyleloftd72@gmail.com — Professional inquiries & global shipments.</p>
                         </a>
                     </div>
 
