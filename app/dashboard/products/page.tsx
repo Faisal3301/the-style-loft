@@ -232,7 +232,7 @@ export default function AutoImportProductsPage() {
                     const cleanName = file.name.replace(/\.[^/.]+$/, "");
                     await addDoc(collection(db, "products"), {
                         name: cleanName || "Cloudinary Item",
-                        price: parseFloat(defaultPrice) || 10,
+                        price: parseFloat(defaultPrice) || 0,
                         salePrice: null,
                         description: "",
                         offerDuration: "",
