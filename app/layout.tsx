@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import ClientNotifications from "./components/product/ClientNotifications"; // Path check kar lein
+import ClientNotifications from "./components/product/ClientNotifications"; 
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,10 +31,8 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col" suppressHydrationWarning>
-        {/* Realtime Notification Listener (Chat replies, New Products, Offers) */}
+      <body className="min-h-full flex flex-col bg-[#f1f5f9]" suppressHydrationWarning>
         <ClientNotifications />
-        
         {children}
       </body>
     </html>

@@ -10,7 +10,8 @@ interface MediaDisplayProps {
     alt?: string;
     controls?: boolean;
     thumbnailOnly?: boolean;
-    bannerId?: string; // Analytics tracking ke liye ID
+    bannerId?: string; // Analytics tracking ke liye ID (ye promotional_banners ya products doc id ho sakti hai)
+    collectionName?: "promotional_banners" | "products"; // Kis collection mein update krna hai
 }
 
 export default function MediaDisplay({ 
@@ -19,10 +20,11 @@ export default function MediaDisplay({
     alt = "Media", 
     controls = true, 
     thumbnailOnly = false,
-    bannerId 
+    bannerId,
+    collectionName = "promotional_banners"
 }: MediaDisplayProps) {
     const videoRef = useRef<HTMLVideoElement>(null);
-    const [hasTracked, setHasTracked] = useState(false);
+    const [hasTrackedView, setHasTrackedView] = useState(false);
 
     if (!url) return null;
 
@@ -32,26 +34,38 @@ export default function MediaDisplay({
         thumbnailUrl = url.replace(/\.[^/.]+$/, ".jpg");
     }
 
-    // 1. Analytics Tracking (Jab video/image play ya screen par view ho)
+    // 1. View & Unique Visitor Tracking (Sirf ek bar count hoga per session/component mount)
     const handleMediaView = async () => {
-        if (!bannerId || hasTracked) return;
+        if (!bannerId || hasTrackedView) return;
+        
+        const sessionKey = `viewed_${bannerId}`;
+        const hasSessionView = sessionStorage.getItem(sessionKey);
+
         try {
-            setHasTracked(true);
-            const bannerRef = doc(db, "promotional_banners", bannerId);
-            await updateDoc(bannerRef, {
-                views: increment(1),
-                uniqueVisitors: increment(1)
-            });
+            setHasTrackedView(true);
+            const targetCollection = collectionName || "promotional_banners";
+            const bannerRef = doc(db, targetCollection, bannerId);
+            
+            const updates: any = {
+                views: increment(1)
+            };
+
+            if (!hasSessionView) {
+                updates.uniqueVisitors = increment(1);
+                sessionStorage.setItem(sessionKey, "true");
+            }
+
+            await updateDoc(bannerRef, updates);
         } catch (error) {
             console.error("Error tracking view:", error);
         }
     };
 
-    // 2. Multi-video conflict fix (Aik waqt mein sirf aik video play hogi)
+    // 2. Play Handler & Multi-video conflict fix
     const handlePlay = () => {
         handleMediaView();
 
-        // Website ki baaki saari videos ko select karke pause kar do
+        // Website ki baaki saari videos ko pause kar do taaki ek waqt mein aik hi chale
         const allVideos = document.querySelectorAll("video");
         allVideos.forEach((v) => {
             if (v !== videoRef.current) {
@@ -60,29 +74,54 @@ export default function MediaDisplay({
         });
     };
 
-    // Watch time tracking jab video play ho rahi ho
+    // 3. Real Active Watch Time Tracker ( Jab tak video play rahegi, watch time count hoga )
     useEffect(() => {
-        // Agar timer use nahi ho raha toh variable declare karne ki zaroorat nahi, 
-        // lekin agar future ke liye rakhna hai toh isko properly type/initialize karein:
-        let watchTimer: NodeJS.Timeout | undefined = undefined;
+        if (type !== "video" || !bannerId) return;
+
+        let watchTimer: NodeJS.Timeout | null = null;
         const videoElement = videoRef.current;
 
-        const handleTimeUpdate = () => {
-            // Har 5 seconds playback par watch time database mein add hoga
-            if (bannerId && videoElement && !videoElement.paused) {
-                // Throttle ya interval ke zariye safe update
-            }
+        const startWatchTimer = () => {
+            if (watchTimer) return;
+            // Har 5 second continuous playback par database mein watch time barhta jayega
+            watchTimer = setInterval(async () => {
+                if (videoElement && !videoElement.paused) {
+                    try {
+                        const targetCollection = collectionName || "promotional_banners";
+                        const docRef = doc(db, targetCollection, bannerId);
+                        await updateDoc(docRef, {
+                            totalWatchTimeSeconds: increment(5)
+                        });
+                    } catch (err) {
+                        console.error("Error updating watch time:", err);
+                    }
+                }
+            }, 5000);
         };
 
-        // Agar aap future mein setInterval lagana chahein toh yahan laga sakte hain:
-        // watchTimer = setInterval(handleTimeUpdate, 5000);
-
-        return () => {
+        const stopWatchTimer = () => {
             if (watchTimer) {
                 clearInterval(watchTimer);
+                watchTimer = null;
             }
         };
-    }, [bannerId]);
+
+        const currentVideo = videoElement;
+        if (currentVideo) {
+            currentVideo.addEventListener("play", startWatchTimer);
+            currentVideo.addEventListener("pause", stopWatchTimer);
+            currentVideo.addEventListener("ended", stopWatchTimer);
+        }
+
+        return () => {
+            stopWatchTimer();
+            if (currentVideo) {
+                currentVideo.removeEventListener("play", startWatchTimer);
+                currentVideo.removeEventListener("pause", stopWatchTimer);
+                currentVideo.removeEventListener("ended", stopWatchTimer);
+            }
+        };
+    }, [bannerId, type, collectionName]);
 
     // Agar sirf thumbnail dikhana hai
     if (thumbnailOnly) {

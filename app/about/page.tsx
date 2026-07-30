@@ -1,15 +1,18 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import Header from "./../components/Header";
 import Footer from "./../components/Footer";
 import { db } from "./../config/firebase";
-import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
+import { collection, onSnapshot, query, orderBy, limit, startAfter, getDocs } from "firebase/firestore";
 
 interface HappyCategory {
   id: string;
-  name: string;
-  subCategory: string;
+  category?: string; // Main category field
+  name?: string;     // Fallback ke liye
+  subCategory?: string;
+  subCategories?: string[]; // Array support ke liye jo screenshot mein thi
+  createdAt?: any;
 }
 
 interface HappyProof {
@@ -21,15 +24,23 @@ interface HappyProof {
   mediaType: string;
 }
 
+const PAGE_SIZE = 4; // Ek dafa mein scroll par kitni categories load hongi
+
 export default function ClientAboutAndProofsPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
-  
+
   const [categoriesList, setCategoriesList] = useState<HappyCategory[]>([]);
   const [happyProofs, setHappyProofs] = useState<HappyProof[]>([]);
   const [loadingProofs, setLoadingProofs] = useState(false);
   const [proofsFetched, setProofsFetched] = useState(false);
+
+  // Lazy Loading States for Categories
+  const [lastVisible, setLastVisible] = useState<any>(null);
+  const [loadingMoreCats, setLoadingMoreCats] = useState(false);
+  const [hasMoreCats, setHasMoreCats] = useState(true);
+  const observerRef = useRef<IntersectionObserver | null>(null);
 
   // Active View Tab: 'ABOUT' or Category Name
   const [activeTab, setActiveTab] = useState<string>("ABOUT");
@@ -40,33 +51,96 @@ export default function ClientAboutAndProofsPage() {
   // Modal / Preview & Index for Next/Prev Swapping
   const [activeImageIndex, setActiveImageIndex] = useState<number | null>(null);
 
-  // Fetch Categories on mount (Lazy load proofs later)
- useEffect(() => {
-    const q = query(collection(db, "happy_customer_categories"), orderBy("createdAt", "desc"));
-    const unsubscribe = onSnapshot(q, (catSnap) => {
-      const fetchedCats: HappyCategory[] = [];
-      catSnap.forEach(d => {
-        fetchedCats.push({ id: d.id, ...d.data() } as HappyCategory);
-      });
-      setCategoriesList(fetchedCats);
-    }, (err) => {
-      console.error("Error fetching categories:", err);
-    });
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
+  // 1. Initial Fetch Categories with Lazy Loading (Limit)
+  useEffect(() => {
+    const fetchInitialCategories = async () => {
+      try {
+        const q = query(
+          collection(db, "happy_customer_categories"),
+          orderBy("name"),
+          limit(PAGE_SIZE)
+        );
+
+        const snapshot = await getDocs(q);
+        const fetchedCats: HappyCategory[] = [];
+
+        snapshot.forEach(d => {
+          fetchedCats.push({ id: d.id, ...d.data() } as HappyCategory);
+        });
+
+        const lastDoc = snapshot.docs[snapshot.docs.length - 1];
+        setLastVisible(lastDoc);
+        setHasMoreCats(snapshot.docs.length === PAGE_SIZE);
+        setCategoriesList(fetchedCats);
+      } catch (err) {
+        console.error("Error fetching initial categories:", err);
+      }
+    };
+
+    fetchInitialCategories();
     document.title = "About Us & Customer Proofs - The Style Loft";
-    
-    return () => unsubscribe();
   }, []);
 
+  // 2. Load More Categories on Scroll (Infinite Lazy Loading)
+  const loadMoreCategories = async () => {
+    if (!lastVisible || loadingMoreCats || !hasMoreCats) return;
+
+    setLoadingMoreCats(true);
+    try {
+      const q = query(
+        collection(db, "happy_customer_categories"),
+        orderBy("name"),
+        startAfter(lastVisible),
+        limit(PAGE_SIZE)
+      );
+
+      const snapshot = await getDocs(q);
+      if (snapshot.empty) {
+        setHasMoreCats(false);
+        setLoadingMoreCats(false);
+        return;
+      }
+
+      const moreCats: HappyCategory[] = [];
+      snapshot.forEach(d => {
+        moreCats.push({ id: d.id, ...d.data() } as HappyCategory);
+      });
+
+      const lastDoc = snapshot.docs[snapshot.docs.length - 1];
+      setLastVisible(lastDoc);
+      setHasMoreCats(snapshot.docs.length === PAGE_SIZE);
+
+      setCategoriesList(prev => [...prev, ...moreCats]);
+    } catch (err) {
+      console.error("Error loading more categories:", err);
+    } finally {
+      setLoadingMoreCats(false);
+    }
+  };
+
+  // Intersection Observer for Scroll Trigger
+  const lastCategoryElementRef = useCallback((node: HTMLDivElement | null) => {
+    if (loadingMoreCats) return;
+    if (observerRef.current) observerRef.current.disconnect();
+
+    observerRef.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasMoreCats) {
+        loadMoreCategories();
+      }
+    });
+
+    if (node) observerRef.current.observe(node);
+  }, [loadingMoreCats, hasMoreCats, lastVisible]);
+
   // Lazy Load Proofs only when user clicks a category tab for the first time
-  // Lazy Load Proofs with real-time sync once triggered
   const loadProofsIfNeeded = () => {
     if (!proofsFetched) {
       setLoadingProofs(true);
-      
+
       const q = query(collection(db, "happy_customer_proofs"), orderBy("createdAt", "desc"));
-      
-      // onSnapshot use karne se real-time updates milte rahenge
+
       const unsubscribe = onSnapshot(q, (proofSnap) => {
         const fetchedProofs: HappyProof[] = [];
         proofSnap.forEach(d => {
@@ -79,8 +153,6 @@ export default function ClientAboutAndProofsPage() {
         console.error("Error fetching proofs:", err);
         setLoadingProofs(false);
       });
-
-      // Optional: Agar aap component unmount hone par unsubscribe karna chahein toh cleanup handle kar sakte hain
     }
   };
 
@@ -91,13 +163,27 @@ export default function ClientAboutAndProofsPage() {
     setIsSidebarOpen(false); // Close mobile sidebar on select
   };
 
-  // Group categories into a tree structure: { [categoryName]: subCategories[] }
-  const categoryTree = categoriesList.reduce((acc: { [key: string]: string[] }, cat) => {
-    if (!acc[cat.name]) {
-      acc[cat.name] = [];
-    }
-    if (cat.subCategory && !acc[cat.name].includes(cat.subCategory)) {
-      acc[cat.name].push(cat.subCategory);
+  // Group categories into a tree structure handling both subCategory (string) & subCategories (array)
+  const categoryTree = categoriesList.reduce((acc: { [key: string]: string[] }, cat: any) => {
+    const catName = cat.category || cat.name;
+
+    if (catName) {
+      if (!acc[catName]) {
+        acc[catName] = [];
+      }
+
+      // Agar subCategories array ki form mein ho (jaise database screenshot mein hai)
+      if (Array.isArray(cat.subCategories)) {
+        cat.subCategories.forEach((sub: string) => {
+          if (!acc[catName].includes(sub)) {
+            acc[catName].push(sub);
+          }
+        });
+      }
+      // Agar single subCategory field ho
+      else if (cat.subCategory && !acc[catName].includes(cat.subCategory)) {
+        acc[catName].push(cat.subCategory);
+      }
     }
     return acc;
   }, {});
@@ -107,7 +193,7 @@ export default function ClientAboutAndProofsPage() {
     const matchesCat = activeTab === "ABOUT" || p.category === activeTab;
     const matchesSubCat = selectedSubCategory === "ALL" || p.subCategory === selectedSubCategory;
     const matchesSearch = p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          p.category.toLowerCase().includes(searchQuery.toLowerCase());
+      p.category.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCat && matchesSubCat && matchesSearch;
   });
 
@@ -145,9 +231,12 @@ export default function ClientAboutAndProofsPage() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [activeImageIndex, handleNext, handlePrev]);
 
+  // Return statement ke andar aap apne sidebar render karte waqt `categoryTree` ke keys ko map kar sakte hain
+  // Aur aakhri category element par `ref={lastCategoryElementRef}` pass kar dein taake scroll lazy load ho sake.
+
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", background: "#f8fafc", color: "#0f172a", fontFamily: "'Inter', Arial, sans-serif" }}>
-      <Header 
+      <Header
         cartCount={cartCount}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
@@ -172,14 +261,14 @@ export default function ClientAboutAndProofsPage() {
       </div>
 
       <div style={{ display: "flex", flex: 1, maxWidth: "1500px", margin: "0 auto", width: "100%", padding: "24px", gap: "24px", boxSizing: "border-box", position: "relative" }} className="main-layout-container">
-        
+
         {/* Sidebar Navigation (Desktop & Mobile Slide-over) */}
         <aside className={`sidebar-container ${isSidebarOpen ? "open" : ""}`} style={{ width: "280px", flexShrink: 0, background: "#ffffff", borderRadius: "16px", padding: "20px", border: "1px solid #e2e8f0", height: "fit-content", position: "sticky", top: "90px", zIndex: 50 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", borderBottom: "2px solid #f1f5f9", paddingBottom: "10px" }}>
             <h3 style={{ fontSize: "15px", fontWeight: "900", color: "#0f172a", margin: 0 }}>
               🧭 Navigation Menu
             </h3>
-            <button 
+            <button
               onClick={() => setIsSidebarOpen(false)}
               className="mobile-close-btn"
               style={{ display: "none", background: "none", border: "none", fontSize: "18px", fontWeight: "bold", cursor: "pointer", color: "#64748b" }}
@@ -214,8 +303,10 @@ export default function ClientAboutAndProofsPage() {
             {/* Tree Structure Iteration */}
             {Object.entries(categoryTree).map(([catName, subCats]) => {
               const isCatActive = activeTab === catName;
+
               return (
                 <div key={catName} style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                  {/* MAIN CATEGORY BUTTON */}
                   <button
                     onClick={() => handleCategoryClick(catName, "ALL")}
                     style={{
@@ -235,11 +326,14 @@ export default function ClientAboutAndProofsPage() {
                     }}
                   >
                     <span>📁 {catName}</span>
-                    <span style={{ fontSize: "10px", opacity: 0.8 }}>{subCats.length > 0 ? "▼" : ""}</span>
+                    {/* Arrow direction dynamic based on active state */}
+                    <span style={{ fontSize: "10px", opacity: 0.8 }}>
+                      {subCats.length > 0 ? (isCatActive ? "▲" : "▼") : ""}
+                    </span>
                   </button>
 
-                  {/* Sub-categories tree branch */}
-                  {subCats.length > 0 && (
+                  {/* 🎯 SUB-CATEGORIES TREE: Sirf TABHI dikhega jab category active/clicked ho */}
+                  {isCatActive && subCats.length > 0 && (
                     <div style={{ display: "flex", flexDirection: "column", gap: "3px", paddingLeft: "20px", borderLeft: "2px solid #e2e8f0", marginLeft: "14px", marginBottom: "4px" }}>
                       <button
                         onClick={() => handleCategoryClick(catName, "ALL")}
@@ -248,17 +342,18 @@ export default function ClientAboutAndProofsPage() {
                           padding: "6px 10px",
                           borderRadius: "6px",
                           border: "none",
-                          backgroundColor: isCatActive && selectedSubCategory === "ALL" ? "#eff6ff" : "transparent",
-                          color: isCatActive && selectedSubCategory === "ALL" ? "#2563eb" : "#64748b",
-                          fontWeight: isCatActive && selectedSubCategory === "ALL" ? "bold" : "500",
+                          backgroundColor: selectedSubCategory === "ALL" ? "#eff6ff" : "transparent",
+                          color: selectedSubCategory === "ALL" ? "#2563eb" : "#64748b",
+                          fontWeight: selectedSubCategory === "ALL" ? "bold" : "500",
                           fontSize: "12px",
                           cursor: "pointer"
                         }}
                       >
                         ↳ All {catName}
                       </button>
+
                       {subCats.map(sub => {
-                        const isSubActive = isCatActive && selectedSubCategory === sub;
+                        const isSubActive = selectedSubCategory === sub;
                         return (
                           <button
                             key={sub}
@@ -289,7 +384,7 @@ export default function ClientAboutAndProofsPage() {
 
         {/* Main Content Area */}
         <main style={{ flex: 1, background: "#ffffff", padding: "30px", borderRadius: "16px", boxShadow: "0 4px 20px rgba(0,0,0,0.02)", border: "1px solid #e2e8f0", width: "100%", boxSizing: "border-box", display: "flex", flexDirection: "column", gap: "24px" }}>
-          
+
           {/* TAB 1: ABOUT US & DETAILED STATEMENTS */}
           {activeTab === "ABOUT" ? (
             <div>
@@ -372,8 +467,8 @@ export default function ClientAboutAndProofsPage() {
                 <p style={{ fontSize: "14px", color: "#cbd5e1", maxWidth: "600px", margin: "0 auto 20px auto", lineHeight: "1.6" }}>
                   Explore our category screenshots and delivery proofs from the menu.
                 </p>
-                <button 
-                  onClick={() => categoriesList.length > 0 && handleCategoryClick(categoriesList[0].name, "ALL")}
+                <button
+                  onClick={() => categoriesList.length > 0 && handleCategoryClick(categoriesList[0].name || "", "ALL")}
                   style={{ background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)", color: "#0f172a", padding: "12px 28px", borderRadius: "8px", fontWeight: "900", border: "none", cursor: "pointer", boxShadow: "0 4px 15px rgba(245,158,11,0.4)" }}
                 >
                   📁 Explore Customer Proofs Now
@@ -383,49 +478,88 @@ export default function ClientAboutAndProofsPage() {
           ) : (
             /* TAB 2+: DYNAMIC CATEGORY PROOFS GALLERY */
             <div>
+              {/* TOP BANNER / HEADER */}
               <div style={{ background: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)", borderRadius: "12px", padding: "20px 24px", color: "#fff", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px", marginBottom: "24px" }}>
                 <div>
                   <h2 style={{ fontSize: "20px", fontWeight: "900", margin: "0 0 4px 0", color: "#fef3c7" }}>
-                    📂 {activeTab} {selectedSubCategory !== "ALL" ? `› ${selectedSubCategory}` : ""}
+                    📂 {selectedCategory ? selectedCategory : activeTab} {selectedSubCategory !== "ALL" ? `› ${selectedSubCategory}` : ""}
                   </h2>
                   <p style={{ fontSize: "12px", color: "#94a3b8", margin: 0 }}>Verified customer proofs & screenshots</p>
                 </div>
-                <button 
-                  onClick={() => setActiveTab("ABOUT")}
-                  style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "6px 14px", borderRadius: "6px", fontSize: "12px", cursor: "pointer", fontWeight: "bold" }}
-                >
-                  Back to About Us ✕
-                </button>
+
+                <div style={{ display: "flex", gap: "8px" }}>
+                  {/* Reset Filter Button (Faqat tab dikhega jab category select ho) */}
+                  {selectedCategory && (
+                    <button
+                      onClick={() => {
+                        setSelectedCategory(null);
+                        setSelectedSubCategory("ALL");
+                      }}
+                      style={{ background: "#3b82f6", border: "none", color: "#fff", padding: "6px 14px", borderRadius: "6px", fontSize: "12px", cursor: "pointer", fontWeight: "bold" }}
+                    >
+                      Show All Categories ↺
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => setActiveTab("ABOUT")}
+                    style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "6px 14px", borderRadius: "6px", fontSize: "12px", cursor: "pointer", fontWeight: "bold" }}
+                  >
+                    Back to About Us ✕
+                  </button>
+                </div>
               </div>
 
+              {/* PROOFS LISTING */}
               {loadingProofs ? (
                 <div style={{ textAlign: "center", padding: "60px", color: "#64748b", fontWeight: "600" }}>Loading proofs securely...</div>
               ) : filteredProofs.length === 0 ? (
                 <div style={{ textAlign: "center", padding: "60px", backgroundColor: "#f8fafc", borderRadius: "12px", border: "1px solid #e2e8f0" }}>
-                  <p style={{ fontSize: "16px", fontWeight: "bold", color: "#334155", margin: "0 0 6px 0" }}>No proofs found in this sub-category!</p>
+                  <p style={{ fontSize: "16px", fontWeight: "bold", color: "#334155", margin: "0 0 6px 0" }}>No proofs found in this category!</p>
                   <p style={{ fontSize: "13px", color: "#64748b", margin: 0 }}>Check back later or choose another category.</p>
                 </div>
               ) : (
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "20px" }}>
-                  {filteredProofs.map((proof, index) => (
-                    <div 
-                      key={proof.id}
-                      onClick={() => setActiveImageIndex(index)}
-                      style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "12px", overflow: "hidden", cursor: "pointer", boxShadow: "0 2px 4px rgba(0,0,0,0.02)", transition: "transform 0.2s, box-shadow 0.2s", display: "flex", flexDirection: "column" }}
-                    >
-                      <div style={{ width: "100%", height: "220px", backgroundColor: "#000", display: "flex", justifyContent: "center", alignItems: "center", overflow: "hidden" }}>
-                        {proof.mediaType === "video" ? (
-                          <video src={proof.mediaUrl} style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
-                        ) : (
-                          <img src={proof.mediaUrl} alt={proof.title} style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
-                        )}
+                  {filteredProofs
+                    // 🎯 FILTER LOGIC: Jab tak selectedCategory click na ho, filter handle hoga
+                    .filter((proof) => !selectedCategory || proof.category === selectedCategory)
+                    .map((proof, index) => (
+                      <div
+                        key={proof.id}
+                        onClick={() => setActiveImageIndex(index)}
+                        style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "12px", overflow: "hidden", cursor: "pointer", boxShadow: "0 2px 4px rgba(0,0,0,0.02)", transition: "transform 0.2s, box-shadow 0.2s", display: "flex", flexDirection: "column" }}
+                      >
+                        <div style={{ width: "100%", height: "220px", backgroundColor: "#000", display: "flex", justifyContent: "center", alignItems: "center", overflow: "hidden" }}>
+                          {proof.mediaType === "video" ? (
+                            <video src={proof.mediaUrl} style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
+                          ) : (
+                            <img src={proof.mediaUrl} alt={proof.title} style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
+                          )}
+                        </div>
+
+                        <div style={{ padding: "12px", display: "flex", flexDirection: "column", gap: "4px" }}>
+                          <h4 style={{ fontSize: "13px", fontWeight: "bold", color: "#0f172a", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                            {proof.title}
+                          </h4>
+
+                          {/* Category Click Handler: Is par click karne se baaki categories hide ho jayengi */}
+                          <p style={{ fontSize: "11px", color: "#64748b", margin: 0 }}>
+                            📁
+                            <span
+                              onClick={(e) => {
+                                e.stopPropagation(); // Card preview click prevent karne ke liye
+                                setSelectedCategory(proof.category);
+                              }}
+                              style={{ cursor: "pointer", textDecoration: "underline", fontWeight: "600", color: "#2563eb", marginLeft: "4px" }}
+                            >
+                              {proof.category}
+                            </span>
+                            {/* Direct display on card */}
+                            {selectedCategory && ` › ${proof.subCategory}`}
+                          </p>
+                        </div>
                       </div>
-                      <div style={{ padding: "12px", display: "flex", flexDirection: "column", gap: "4px" }}>
-                        <h4 style={{ fontSize: "13px", fontWeight: "bold", color: "#0f172a", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{proof.title}</h4>
-                        <p style={{ fontSize: "11px", color: "#64748b", margin: 0 }}>📁 {proof.category} › {proof.subCategory}</p>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               )}
             </div>
@@ -435,52 +569,112 @@ export default function ClientAboutAndProofsPage() {
       </div>
 
       {/* Fullscreen Modal with Keyboard Arrow Keys Support & Image Swap */}
-      {activeImageIndex !== null && filteredProofs[activeImageIndex] && (
-        <div 
-          onClick={() => setActiveImageIndex(null)}
-          style={{ position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh", backgroundColor: "rgba(0,0,0,0.9)", zIndex: 9999, display: "flex", justifyContent: "center", alignItems: "center", padding: "20px", boxSizing: "border-box" }}
-        >
-          <div style={{ position: "relative", maxWidth: "900px", width: "100%", maxHeight: "90vh", display: "flex", justifyContent: "center", alignItems: "center" }} onClick={(e) => e.stopPropagation()}>
-            
-            {/* Close Button */}
-            <button 
-              onClick={() => setActiveImageIndex(null)}
-              style={{ position: "absolute", top: "-45px", right: "0", backgroundColor: "#ef4444", color: "#fff", border: "none", width: "36px", height: "36px", borderRadius: "50%", fontWeight: "bold", fontSize: "16px", cursor: "pointer", zIndex: 100 }}
-            >
-              ✕
-            </button>
+      {activeImageIndex !== null && filteredProofs[activeImageIndex] && (() => {
+        // 🎯 Mobile Touch Swipe Logic
+        const [touchStartX, setTouchStartX] = useState<number | null>(null);
+        const [touchEndX, setTouchEndX] = useState<number | null>(null);
 
-            {/* Previous Button (Left Arrow Key also works) */}
-            <button 
-              onClick={handlePrev}
-              style={{ position: "absolute", left: "-20px", top: "50%", transform: "translateY(-50%)", backgroundColor: "rgba(255,255,255,0.2)", color: "#fff", border: "none", width: "44px", height: "44px", borderRadius: "50%", fontSize: "20px", fontWeight: "bold", cursor: "pointer", zIndex: 100, display: "flex", justifyContent: "center", alignItems: "center" }}
-            >
-              ❮
-            </button>
+        // Min distance (pixels) to trigger swipe
+        const minSwipeDistance = 50;
 
-            {/* Main Media Viewer */}
-            <div style={{ textAlign: "center", width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
-              {filteredProofs[activeImageIndex].mediaType === "video" ? (
-                <video src={filteredProofs[activeImageIndex].mediaUrl} controls autoPlay style={{ maxWidth: "100%", maxHeight: "80vh", borderRadius: "8px" }} />
-              ) : (
-                <img src={filteredProofs[activeImageIndex].mediaUrl} alt="Zoomed Proof" style={{ maxWidth: "100%", maxHeight: "80vh", objectFit: "contain", borderRadius: "8px" }} />
-              )}
-              <p style={{ color: "#fff", fontSize: "14px", marginTop: "12px", fontWeight: "600" }}>
-                {filteredProofs[activeImageIndex].title} ({activeImageIndex + 1} of {filteredProofs.length}) — Use Keyboard ◀ ▶ keys to swap
-              </p>
+        const onTouchStart = (e: React.TouchEvent) => {
+          setTouchEndX(null); // Reset
+          setTouchStartX(e.targetTouches[0].clientX);
+        };
+
+        const onTouchMove = (e: React.TouchEvent) => {
+          setTouchEndX(e.targetTouches[0].clientX);
+        };
+
+        const onTouchEnd = () => {
+          if (!touchStartX || !touchEndX) return;
+          const distance = touchStartX - touchEndX;
+          const isLeftSwipe = distance > minSwipeDistance;
+          const isRightSwipe = distance < -minSwipeDistance;
+
+          if (isLeftSwipe) {
+            handleNext(); // Finger Left Dragged = Next Image
+          } else if (isRightSwipe) {
+            handlePrev(); // Finger Right Dragged = Previous Image
+          }
+        };
+
+        return (
+          <div
+            onClick={() => setActiveImageIndex(null)}
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              width: "100vw",
+              height: "100vh",
+              backgroundColor: "rgba(0,0,0,0.9)",
+              zIndex: 9999,
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              padding: "20px",
+              boxSizing: "border-box"
+            }}
+          >
+            <div
+              /* 📱 TOUCH EVENTS HOOKED HERE FOR MOBILE SWIPE */
+              onTouchStart={onTouchStart}
+              onTouchMove={onTouchMove}
+              onTouchEnd={onTouchEnd}
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                position: "relative",
+                maxWidth: "900px",
+                width: "100%",
+                maxHeight: "90vh",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                touchAction: "pan-y" // Prevent page vertical scroll conflict while horizontal swiping
+              }}
+            >
+
+              {/* Close Button */}
+              <button
+                onClick={() => setActiveImageIndex(null)}
+                style={{ position: "absolute", top: "-45px", right: "0", backgroundColor: "#ef4444", color: "#fff", border: "none", width: "36px", height: "36px", borderRadius: "50%", fontWeight: "bold", fontSize: "16px", cursor: "pointer", zIndex: 100 }}
+              >
+                ✕
+              </button>
+
+              {/* Previous Button */}
+              <button
+                onClick={handlePrev}
+                style={{ position: "absolute", left: "-20px", top: "50%", transform: "translateY(-50%)", backgroundColor: "rgba(255,255,255,0.2)", color: "#fff", border: "none", width: "44px", height: "44px", borderRadius: "50%", fontSize: "20px", fontWeight: "bold", cursor: "pointer", zIndex: 100, display: "flex", justifyContent: "center", alignItems: "center" }}
+              >
+                ❮
+              </button>
+
+              {/* Main Media Viewer */}
+              <div style={{ textAlign: "center", width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
+                {filteredProofs[activeImageIndex].mediaType === "video" ? (
+                  <video src={filteredProofs[activeImageIndex].mediaUrl} controls autoPlay style={{ maxWidth: "100%", maxHeight: "80vh", borderRadius: "8px" }} />
+                ) : (
+                  <img src={filteredProofs[activeImageIndex].mediaUrl} alt="Zoomed Proof" style={{ maxWidth: "100%", maxHeight: "80vh", objectFit: "contain", borderRadius: "8px", userSelect: "none" }} />
+                )}
+                <p style={{ color: "#fff", fontSize: "14px", marginTop: "12px", fontWeight: "600" }}>
+                  {filteredProofs[activeImageIndex].title} ({activeImageIndex + 1} of {filteredProofs.length}) — Swipe ◀ ▶ on mobile or use keyboard
+                </p>
+              </div>
+
+              {/* Next Button */}
+              <button
+                onClick={handleNext}
+                style={{ position: "absolute", right: "-20px", top: "50%", transform: "translateY(-50%)", backgroundColor: "rgba(255,255,255,0.2)", color: "#fff", border: "none", width: "44px", height: "44px", borderRadius: "50%", fontSize: "20px", fontWeight: "bold", cursor: "pointer", zIndex: 100, display: "flex", justifyContent: "center", alignItems: "center" }}
+              >
+                ❯
+              </button>
+
             </div>
-
-            {/* Next Button (Right Arrow Key also works) */}
-            <button 
-              onClick={handleNext}
-              style={{ position: "absolute", right: "-20px", top: "50%", transform: "translateY(-50%)", backgroundColor: "rgba(255,255,255,0.2)", color: "#fff", border: "none", width: "44px", height: "44px", borderRadius: "50%", fontSize: "20px", fontWeight: "bold", cursor: "pointer", zIndex: 100, display: "flex", justifyContent: "center", alignItems: "center" }}
-            >
-              ❯
-            </button>
-
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       <Footer />
 

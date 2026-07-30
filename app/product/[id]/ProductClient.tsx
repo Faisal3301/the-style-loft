@@ -3,7 +3,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { db } from "../../config/firebase";
 import { doc, getDoc, collection, getDocs, query, where } from "firebase/firestore";
-import Link from "next/link";
 
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
@@ -65,13 +64,11 @@ export default function ProductClient({ params }: { params: { id: string } }) {
             try {
                 setLoading(true);
 
-                // 1. Fetch Categories for Header & Sidebar
                 const catSnap = await getDocs(collection(db, "categories"));
                 const catList: any[] = [];
                 catSnap.forEach(c => catList.push({ id: c.id, ...c.data() }));
                 setCategoriesList(catList);
 
-                // 2. Fetch Product Details
                 const docRef = doc(db, "products", productId);
                 const docSnap = await getDoc(docRef);
 
@@ -102,7 +99,6 @@ export default function ProductClient({ params }: { params: { id: string } }) {
                     setRelatedProducts(allItems);
                 }
 
-                // 3. Fetch Comments
                 const commQuery = query(collection(db, "product_comments"), where("productId", "==", productId));
                 const commSnap = await getDocs(commQuery);
                 const commList: CommentItem[] = [];
@@ -121,7 +117,6 @@ export default function ProductClient({ params }: { params: { id: string } }) {
         fetchProductData();
     }, [productId]);
 
-    // Active Category Object for Subcategories in Sidebar
     const activeCatObj = useMemo(() => {
         if (!categoriesList || categoriesList.length === 0) return null;
         return categoriesList.find(c => c.name === selectedCategoryFilter) || null;
@@ -168,21 +163,23 @@ export default function ProductClient({ params }: { params: { id: string } }) {
 
     return (
         <div className="page-root">
-            {/* Header */}
-            <Header
-                cartCount={cartCount}
-                country="UK"
-                setCountry={() => { }}
-                searchQuery={searchQuery}
-                setSearchQuery={setSearchQuery}
-                selectedCategoryFilter={selectedCategoryFilter}
-                setSelectedCategoryFilter={setSelectedCategoryFilter}
-                setSelectedSubCategoryFilter={setSelectedSubCategory}
-                setVisibleCount={() => { }}
-                categoriesList={categoriesList}
-                isSidebarOpen={isSidebarOpen}
-                setIsSidebarOpen={setIsSidebarOpen}
-            />
+            {/* 🎯 FIXED STICKY HEADER WRAPPER */}
+            <div className="sticky-header-wrapper">
+                <Header
+                    cartCount={cartCount}
+                    country="UK"
+                    setCountry={() => { }}
+                    searchQuery={searchQuery}
+                    setSearchQuery={setSearchQuery}
+                    selectedCategoryFilter={selectedCategoryFilter}
+                    setSelectedCategoryFilter={setSelectedCategoryFilter}
+                    setSelectedSubCategoryFilter={setSelectedSubCategory}
+                    setVisibleCount={() => { }}
+                    categoriesList={categoriesList}
+                    isSidebarOpen={isSidebarOpen}
+                    setIsSidebarOpen={setIsSidebarOpen}
+                />
+            </div>
 
             <div className="dashboard-container">
                 <aside className="desktop-sidebar">
@@ -199,7 +196,6 @@ export default function ProductClient({ params }: { params: { id: string } }) {
                     />
                 </aside>
 
-                {/* Mobile Sidebar rendered globally for drawer functionality */}
                 <div className="mobile-sidebar-container">
                     <Sidebar
                         isSidebarOpen={isSidebarOpen}
@@ -215,7 +211,6 @@ export default function ProductClient({ params }: { params: { id: string } }) {
                 </div>
 
                 <main className="main-content-area">
-                    {/* 1. Product Showcase */}
                     <div className="product-showcase-card">
                         <div className="gallery-wrapper">
                             <ProductGallery mediaUrl={product.mediaUrl} mediaType={product.mediaType} name={product.name} />
@@ -232,14 +227,12 @@ export default function ProductClient({ params }: { params: { id: string } }) {
                         </div>
                     </div>
 
-                    {/* 2. Related Products Grid */}
                     <RelatedProducts
                         products={displayedRelatedProducts}
                         category={selectedCategoryFilter}
                         subCategory={selectedSubCategory}
                     />
 
-                    {/* 3. Customer Reviews */}
                     <ProductReviews productId={productId} comments={comments} setComments={setComments} />
                 </main>
             </div>
@@ -253,10 +246,19 @@ export default function ProductClient({ params }: { params: { id: string } }) {
         display: flex;
         flex-direction: column;
         background: #f8fafc;
-        overflow-x: hidden; /* Yeh ensure karega ke horizontal scroll na aaye */
+        /* 🎯 overflow-x: hidden aur max-width yahan se hata di taake Sticky Sticky ki tarah chale */
         width: 100%;
-        max-width: 100vw;
     }
+    
+    /* 🎯 HEADER KO STICKY BANA DENE WALI CLASS */
+    .sticky-header-wrapper {
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        background: #ffffff;
+        width: 100%;
+    }
+
     .dashboard-container {
         display: flex;
         gap: 24px;
@@ -265,7 +267,6 @@ export default function ProductClient({ params }: { params: { id: string } }) {
         padding: 24px;
         box-sizing: border-box;
         width: 100%;
-        overflow-x: hidden;
     }
     .desktop-sidebar {
         width: 260px;
@@ -273,8 +274,7 @@ export default function ProductClient({ params }: { params: { id: string } }) {
     }
     .main-content-area {
         flex: 1;
-        min-width: 0; /* Important: flex item ko overflow hone se rokta hai */
-        overflow-x: hidden;
+        min-width: 0;
     }
     .product-showcase-card {
         display: grid;
