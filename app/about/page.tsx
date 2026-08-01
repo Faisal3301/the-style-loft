@@ -24,7 +24,7 @@ interface HappyProof {
   mediaType: string;
 }
 
-const PAGE_SIZE = 4; // Ek dafa mein scroll par kitni categories load hongi
+const PAGE_SIZE = 6; // Ek dafa mein scroll par kitni categories load hongi
 
 export default function ClientAboutAndProofsPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -52,6 +52,9 @@ export default function ClientAboutAndProofsPage() {
   const [activeImageIndex, setActiveImageIndex] = useState<number | null>(null);
 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+        const [touchEndX, setTouchEndX] = useState<number | null>(null);
 
   // 1. Initial Fetch Categories with Lazy Loading (Limit)
   useEffect(() => {
@@ -571,8 +574,7 @@ export default function ClientAboutAndProofsPage() {
       {/* Fullscreen Modal with Keyboard Arrow Keys Support & Image Swap */}
       {activeImageIndex !== null && filteredProofs[activeImageIndex] && (() => {
         // 🎯 Mobile Touch Swipe Logic
-        const [touchStartX, setTouchStartX] = useState<number | null>(null);
-        const [touchEndX, setTouchEndX] = useState<number | null>(null);
+        
 
         // Min distance (pixels) to trigger swipe
         const minSwipeDistance = 50;
