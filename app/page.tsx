@@ -48,7 +48,7 @@ export default function TheStyleLoftClientDashboard() {
 
   // LAZY LOADING & INFINITE SCROLL STATES
   const INITIAL_LIMIT = 12;
-  const BATCH_SIZE = 8;
+  const BATCH_SIZE = 12;
   const [visibleLimit, setVisibleLimit] = useState(INITIAL_LIMIT);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
   // Component function ke bilkul start mein:
