@@ -9,6 +9,7 @@ import { db, auth } from "./config/firebase";
 import { collection, getDocs, orderBy, query, deleteDoc, doc, updateDoc, increment } from "firebase/firestore";
 import FloatingChatButton from "./components/product/FloatingChatButton";
 import { useRouter } from "next/navigation";
+import ShortsModal from "./shorts/page";
 
 interface Product {
   id: string;
@@ -51,6 +52,9 @@ export default function TheStyleLoftClientDashboard() {
   const BATCH_SIZE = 12;
   const [visibleLimit, setVisibleLimit] = useState(INITIAL_LIMIT);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
+//for shorts modal
+  const [isShortsOpen, setIsShortsOpen] = useState(false);
+
   // Component function ke bilkul start mein:
   const router = useRouter();
 
@@ -306,6 +310,7 @@ export default function TheStyleLoftClientDashboard() {
       
 
       <Header
+      setIsShortsOpen={setIsShortsOpen}
         country={country}
         setCountry={setCountry}
         searchQuery={searchQuery}
@@ -705,6 +710,11 @@ export default function TheStyleLoftClientDashboard() {
         </div>
       )}
 
+    {/* Shorts Modal Component */}
+      {isShortsOpen && (
+        <ShortsModal onClose={() => setIsShortsOpen(false)} />
+      )}
+      
       <Footer />
 
       <FloatingChatButton productName="The Style Loft Exclusive Collection" />

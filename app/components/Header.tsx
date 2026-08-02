@@ -21,6 +21,7 @@ interface HeaderProps {
     categoriesList?: any[];
     isSidebarOpen?: boolean;
     setIsSidebarOpen?: (val: boolean) => void;
+    setIsShortsOpen?: (val: boolean) => void; // 👈 Shorts state prop
     [key: string]: any;
 }
 
@@ -36,7 +37,8 @@ export default function Header({
     setVisibleCount,
     categoriesList,
     isSidebarOpen,
-    setIsSidebarOpen
+    setIsSidebarOpen,
+    setIsShortsOpen
 }: HeaderProps) {
     const [isSearchFocused, setIsSearchFocused] = useState(false);
     const [user, setUser] = useState<any>(null);
@@ -103,18 +105,26 @@ export default function Header({
                     color: #f59e0b !important;
                     transform: translateY(-1px);
                 }
+                .shorts-btn-hover {
+                    transition: all 0.2s ease;
+                }
+                .shorts-btn-hover:hover {
+                    transform: scale(1.05);
+                    box-shadow: 0 4px 14px rgba(239, 68, 68, 0.5);
+                }
+
                 /* Desktop links layout */
                 .desktop-nav-links {
                     display: flex;
                     align-items: center;
-                    gap: 28px; 
-                    margin-left: 20px;
+                    gap: 20px; 
+                    margin-left: 15px;
                 }
                 .mobile-only-links {
                     display: none;
                 }
                 
-                /* Mobile specific layout: Forces ONLY nav links to second line */
+                /* Mobile specific layout */
                 @media (max-width: 900px) {
                     .desktop-nav-links {
                         display: none !important;
@@ -123,10 +133,12 @@ export default function Header({
                         display: flex !important;
                         width: 100% !important;
                         justify-content: center !important;
-                        gap: 25px !important;
+                        align-items: center !important;
+                        gap: 16px !important;
                         margin-top: 6px !important;
                         padding-top: 6px !important;
                         border-top: 1px solid rgba(51, 65, 85, 0.4);
+                        flex-wrap: wrap;
                     }
                     .mobile-header-top {
                         width: 100%;
@@ -153,7 +165,7 @@ export default function Header({
 
                 {/* Top Row container for Mobile / Main row for Desktop */}
                 <div className="mobile-header-top" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", flexWrap: "wrap", gap: "10px" }}>
-                    
+
                     {/* Left: Sidebar Menu & Logo */}
                     <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                         <button
@@ -190,9 +202,36 @@ export default function Header({
 
                         {/* Desktop Navigation Links */}
                         <div className="desktop-nav-links">
-                            <Link href="/" className="nav-hover" style={{ textDecoration: "none", fontSize: "13px", color: "#cbd5e1", fontWeight: "600" }}>Home</Link>
-                            <Link href="/about" className="nav-hover" style={{ textDecoration: "none", fontSize: "13px", color: "#cbd5e1", fontWeight: "600" }}>About Us</Link>
-                            <Link href="/contact" className="nav-hover" style={{ textDecoration: "none", fontSize: "13px", color: "#cbd5e1", fontWeight: "600" }}>Contact Us</Link>
+                            <Link href="/" className="nav-hover" style={{ textDecoration: "none", fontSize: "13px", color: "#cbd5e1", fontWeight: "600" }}>
+                                Home
+                            </Link>
+
+                            <Link href="/about" className="nav-hover" style={{ textDecoration: "none", fontSize: "13px", color: "#cbd5e1", fontWeight: "600" }}>
+                                About Us
+                            </Link>
+
+                            <Link href="/contact" className="nav-hover" style={{ textDecoration: "none", fontSize: "13px", color: "#cbd5e1", fontWeight: "600" }}>
+                                Contact Us
+                            </Link>
+
+                            <Link
+                                href="/shorts"
+                                style={{
+                                    background: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
+                                    color: "#ffffff",
+                                    padding: "5px 12px",
+                                    borderRadius: "20px",
+                                    fontWeight: "700",
+                                    fontSize: "12px",
+                                    textDecoration: "none",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "5px",
+                                    boxShadow: "0 2px 10px rgba(239, 68, 68, 0.3)"
+                                }}
+                            >
+                                🎬 Shorts
+                            </Link>
                         </div>
                     </div>
 
@@ -242,7 +281,7 @@ export default function Header({
                                 </div>
 
                                 {isDropdownOpen && (
-                                    <div style={{ position: "absolute", right: "40px", top: "45px", width: "220px", backgroundColor: "#1e293b", border: "1px solid #334155", borderRadius: "10px", boxShadow: "0 10px 25px rgba(0,0,0,0.4)", zIndex: 1100, overflow: "hidden", padding: "10px 0" }}>
+                                    <div style={{ position: "absolute", right: "0px", top: "45px", width: "220px", backgroundColor: "#1e293b", border: "1px solid #334155", borderRadius: "10px", boxShadow: "0 10px 25px rgba(0,0,0,0.4)", zIndex: 1100, overflow: "hidden", padding: "10px 0" }}>
                                         <div style={{ padding: "10px 16px", borderBottom: "1px solid #334155" }}>
                                             <div style={{ fontSize: "13px", fontWeight: "bold", color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                                                 {userData?.name || "Valued Customer"}
@@ -290,11 +329,33 @@ export default function Header({
 
                 </div>
 
-                {/* Mobile Second Line ONLY for Navigation Links */}
+                {/* Mobile Second Line for Navigation Links + Shorts Button */}
                 <div className="mobile-only-links">
-                    <Link href="/" className="nav-hover" style={{ textDecoration: "none", fontSize: "13px", color: "#cbd5e1", fontWeight: "600" }}>Home</Link>
-                    <Link href="/about" className="nav-hover" style={{ textDecoration: "none", fontSize: "13px", color: "#cbd5e1", fontWeight: "600" }}>About Us</Link>
-                    <Link href="/contact" className="nav-hover" style={{ textDecoration: "none", fontSize: "13px", color: "#cbd5e1", fontWeight: "600" }}>Contact Us</Link>
+                    <Link href="/" className="nav-hover" style={{ textDecoration: "none", fontSize: "12px", color: "#cbd5e1", fontWeight: "600" }}>Home</Link>
+                    <Link href="/about" className="nav-hover" style={{ textDecoration: "none", fontSize: "12px", color: "#cbd5e1", fontWeight: "600" }}>About Us</Link>
+                    <Link href="/contact" className="nav-hover" style={{ textDecoration: "none", fontSize: "12px", color: "#cbd5e1", fontWeight: "600" }}>Contact Us</Link>
+
+                    {/* 🎬 Shorts Button for Mobile */}
+                    <button
+                        onClick={() => setIsShortsOpen && setIsShortsOpen(true)}
+                        className="shorts-btn-hover"
+                        style={{
+                            background: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
+                            color: "#ffffff",
+                            border: "none",
+                            padding: "4px 10px",
+                            borderRadius: "16px",
+                            fontWeight: "700",
+                            fontSize: "11px",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "4px",
+                            boxShadow: "0 2px 8px rgba(239, 68, 68, 0.3)"
+                        }}
+                    >
+                        🎬 Shorts
+                    </button>
                 </div>
             </header>
         </>
