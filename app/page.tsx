@@ -52,7 +52,7 @@ export default function TheStyleLoftClientDashboard() {
   const BATCH_SIZE = 12;
   const [visibleLimit, setVisibleLimit] = useState(INITIAL_LIMIT);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
-//for shorts modal
+  //for shorts modal
   const [isShortsOpen, setIsShortsOpen] = useState(false);
 
   // Component function ke bilkul start mein:
@@ -307,10 +307,10 @@ export default function TheStyleLoftClientDashboard() {
           }
         }
       `}</style>
-      
+
 
       <Header
-      setIsShortsOpen={setIsShortsOpen}
+        setIsShortsOpen={setIsShortsOpen}
         country={country}
         setCountry={setCountry}
         searchQuery={searchQuery}
@@ -582,18 +582,69 @@ export default function TheStyleLoftClientDashboard() {
                     <p style={{ fontSize: "12px", color: "#64748b", margin: "0 0 8px 0" }}>{p.subCategory || p.category}</p>
 
                     {/* PRICE & DIRECT ACTION ROW */}
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #e2e8f0", paddingTop: "6px", marginTop: "auto", gap: "6px" }}>
-                      <span style={{ fontSize: "14px", fontWeight: "900", color: "#0f172a" }}>
-                        {country === "US" ? "$" : "£"}{p.salePrice || p.price || 0}
-                      </span>
+                    <div
+                      style={{
+                        borderTop: "1px solid #e2e8f0",
+                        paddingTop: "8px",
+                        marginTop: "auto",
+                        width: "100%",
+                      }}
+                    >
+                      {/* PRICE - FULL WIDTH */}
+                      <div
+                        style={{
+                          width: "100%",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "flex-start",
+                          marginBottom: "8px",
+                          minHeight: "22px",
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontSize: "14px",
+                            fontWeight: "900",
+                            color: "#0f172a",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {(p.salePrice || p.price || 0) > 0
+                            ? `${country === "US" ? "$" : "£"}${p.salePrice || p.price}`
+                            : "DM for Price"}
+                        </span>
+                      </div>
 
-                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      {/* ACTIONS - SECOND LINE */}
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "flex-end",
+                          gap: "6px",
+                          width: "100%",
+                          flexWrap: "nowrap",
+                        }}
+                      >
                         {/* WhatsApp */}
                         <span
-                          onClick={(e) => handleProtectedAction(e, () => {
-                            window.open(`https://wa.me/923184947722?text=${encodeURIComponent(`Inquiry: ${p.name || ''}`)}`, '_blank');
-                          })}
-                          style={{ cursor: "pointer", color: "#25D366", display: "inline-flex", alignItems: "center", padding: "2px" }}
+                          onClick={(e) =>
+                            handleProtectedAction(e, () => {
+                              window.open(
+                                `https://wa.me/923184947722?text=${encodeURIComponent(
+                                  `Inquiry: ${p.name || ""}`
+                                )}`,
+                                "_blank"
+                              );
+                            })
+                          }
+                          style={{
+                            cursor: "pointer",
+                            color: "#25D366",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            padding: "2px",
+                          }}
                           title="WhatsApp"
                         >
                           <svg width="15" height="15" viewBox="0 0 448 512" fill="currentColor">
@@ -603,35 +654,58 @@ export default function TheStyleLoftClientDashboard() {
 
                         {/* Instagram */}
                         <span
-                          onClick={(e) => handleProtectedAction(e, () => {
-                            window.open("https://instagram.com/thestyleloft_official", '_blank');
-                          })}
-                          style={{ cursor: "pointer", color: "#E4405F", display: "inline-flex", alignItems: "center", padding: "2px" }}
+                          onClick={(e) =>
+                            handleProtectedAction(e, () => {
+                              window.open(
+                                "https://instagram.com/thestyleloft72",
+                                "_blank"
+                              );
+                            })
+                          }
+                          style={{
+                            cursor: "pointer",
+                            color: "#E4405F",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            padding: "2px",
+                          }}
                           title="Instagram"
                         >
                           <svg width="15" height="15" viewBox="0 0 448 512" fill="currentColor">
-                            <path d="M224.1 141c-63.6 0-114.9 51.3-114.9 114.9s51.3 114.9 114.9 114.9S339 319.5 339 255.9 287.7 141 224.1 141zm0 189.6c-41.1 0-74.7-33.5-74.7-74.7s33.5-74.7 74.7-74.7 74.7 33.5 74.7 74.7-33.6 74.7-74.7 74.7zm146.4-194.3c-14.9 0-27 12.1-27 27s12.1 27 27 27c14.9 0 27-12.1 27-27s-12.1-27-27-27zm76.1 27.2c-1.7-35.9-9.9-67.7-36.2-93.9-26.2-26.2-58-34.4-93.9-36.2-37-2.1-147.9-2.1-184.9 0-35.8 1.7-67.6 9.9-93.9 36.1s-34.4 58-36.2 93.9c-2.1 37-2.1 147.9 0 184.9 1.7 35.9 9.9 67.7 36.2 93.9s58 34.4 93.9 36.2c37 2.1 147.9 2.1 184.9 0 35.9-1.7 67.7-9.9 93.9-36.2 26.2-26.2 34.4-58 36.2-93.9 2.1-37 2.1-147.8 0-184.8zM398.8 388c-7.8 19.6-22.9 34.7-42.6 42.6-29.5 11.7-99.5 9-132.1 9s-102.7 2.6-132.1-9c-19.6-7.8-34.7-22.9-42.6-42.6-11.7-29.5-9-99.5-9-132.1s-2.6-102.7 9-132.1c7.8-19.6 22.9-34.7 42.6-42.6 29.5-11.7 99.5-9 132.1-9s102.7-2.6 132.1 9c19.6 7.8 34.7 22.9 42.6 42.6 11.7 29.5 9 99.5 9 132.1s2.7 102.7-9 132.1z" />
+                            <path d="M224.1 141c-63.6 0-114.9 51.3-114.9 114.9s51.3 114.9 114.9 114.9S339 319.5 339 255.9 287.7 141 224.1 141zm0 189.6c-41.1 0-74.7-33.5-74.7-74.7s33.5-74.7 74.7-74.7 74.7 33.6 74.7 74.7-33.6 74.7-74.7 74.7zm146.4-194.3c-14.9 0-27 12.1-27 27s12.1 27 27 27 27-12.1 27-27-12.1-27-27-27zm76.1 27.2c-1.7-35.9-9.9-67.7-36.2-93.9-26.2-26.2-58-34.4-93.9-36.2-37-2.1-147.9-2.1-184.9 0-35.8 1.7-67.6 9.9-93.9 36.1s-34.4 58-36.2 93.9c-2.1 37-2.1 147.9 0 184.9 1.7 35.9 9.9 67.7 36.2 93.9s58 34.4 93.9 36.2c37 2.1 147.9 2.1 184.9 0 35.9-1.7 67.7-9.9 93.9-36.2 26.2-26.2 34.4-58 36.2-93.9 2.1-37 2.1-147.8 0-184.8zM398.8 388c-7.8 19.6-22.9 34.7-42.6 42.6-29.5 11.7-99.5 9-132.1 9s-102.7 2.6-132.1-9c-19.6-7.8-34.7-22.9-42.6-42.6-11.7-29.5-9-99.5-9-132.1s-2.6-102.7 9-132.1c7.8-19.6 22.9-34.7 42.6-42.6 29.5-11.7 99.5-9 132.1-9s102.7-2.6 132.1 9c19.6 7.8 34.4 22.9 42.6 42.6 11.7 29.5 9 99.5 9 132.1s2.7 102.7-9 132.1z" />
                           </svg>
                         </span>
 
                         {/* Email */}
                         <span
-                          onClick={(e) => handleProtectedAction(e, () => {
-                            window.location.href = `mailto:thestyleloft72@gmail.com?subject=${encodeURIComponent(`Inquiry: ${p.name || ''}`)}`;
-                          })}
-                          style={{ cursor: "pointer", color: "#3b82f6", display: "inline-flex", alignItems: "center", padding: "2px" }}
+                          onClick={(e) =>
+                            handleProtectedAction(e, () => {
+                              window.location.href = `mailto:thestyleloft72@gmail.com?subject=${encodeURIComponent(
+                                `Inquiry: ${p.name || ""}`
+                              )}`;
+                            })
+                          }
+                          style={{
+                            cursor: "pointer",
+                            color: "#3b82f6",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            padding: "2px",
+                          }}
                           title="Email"
                         >
                           <svg width="15" height="15" viewBox="0 0 512 512" fill="currentColor">
-                            <path d="M48 64C21.5 64 0 85.5 0 112c0 15.1 7.1 29.3 19.2 38.4l217.6 163.2c11.8 8.9 28 8.9 39.8 0l217.6-163.2c12.1-9.1 19.2-23.3 19.2-38.4 0-26.5-21.5-48-48-48H48zM0 176v224c0 26.5 21.5 48 48 48h416c26.5 0 48-21.5 48-48V176L294.4 313.6c-22.5 16.9-54.3 16.9-76.8 0L0 176z" />
+                            <path d="M48 64C21.5 64 0 85.5 0 112c0 15.1 7.1 29.3 19.2 38.4l217.6 163.2c11.8 8.9 28 8.9 39.8 0l217.6-163.2C506.9 141.3 512 127.1 512 112c0-26.5-21.5-48-48-48H48zM0 176v224c0 26.5 21.5 48 48 48h416c26.5 0 48-21.5 48-48V176L294.4 313.6c-22.5 16.9-54.3 16.9-76.8 0L0 176z" />
                           </svg>
                         </span>
 
-                        {/* Cart Button */}
+                        {/* Cart */}
                         <button
-                          onClick={(e) => handleProtectedAction(e, () => {
-                            alert(`${p.name} cart mein add ho gaya hai!`);
-                          })}
+                          onClick={(e) =>
+                            handleProtectedAction(e, () => {
+                              alert(`${p.name} cart mein add ho gaya hai!`);
+                            })
+                          }
                           style={{
                             fontSize: "11px",
                             backgroundColor: "#2563eb",
@@ -643,20 +717,35 @@ export default function TheStyleLoftClientDashboard() {
                             cursor: "pointer",
                             display: "inline-flex",
                             alignItems: "center",
-                            gap: "4px"
+                            gap: "4px",
+                            whiteSpace: "nowrap",
                           }}
                           title="Add to Cart"
                         >
                           <svg width="12" height="12" viewBox="0 0 576 512" fill="currentColor">
-                            <path d="M0 24C0 10.7 10.7 0 24 0H69.5c22 0 41.5 12.8 50.6 32h411c26.3 0 45.5 25 38.6 50.4l-41 152.3c-8.5 31.4-37 53.3-69.5 53.3H170.7l5.4 28.5c2.2 11.3 12.1 19.5 23.6 19.5H488c13.3 0 24 10.7 24 24s-10.7 24-24 24H199.7c-34.6 0-64.3-24.6-70.7-58.5L77.4 54.5c-3-16-17-26.5-33.1-26.5H24C10.7 28 0 17.3 0 24zM128 464a48 48 0 1 1 96 0 48 48 0 1 1 -96 0zm336-48a48 48 0 1 1 0 96 48 48 0 1 1 0-96z" />
+                            <path d="M0 24C0 10.7 10.7 0 24 0H69.5c22 0 41.5 12.8 50.6 32h411c26.3 0 45.5 25 38.6 50.4l-41 152.3c-8.5 31.4-37 53.3-69.5 53.3H170.7l5.4 28.5c2.2 11.3 12.1 19.5 23.6 19.5H488c13.3 0 24 10.7 24 24s-10.7 24-24 24H199.7c-34.6 0-64.3-24.6-70.7-58.5L77.4 54.5c-3-16-17-26.5-33.1-26.5H24C10.7 28 0 17.3 0 24zM128 464a48 48 0 1 1 96 0 48 48 0 1 1-96 0zm336-48a48 48 0 1 1 0 96 48 48 0 1 1 0-96z" />
                           </svg>
                           Cart
                         </button>
 
-                        {/* View Button */}
+                        {/* View */}
                         <span
-                          onClick={(e) => { e.stopPropagation(); window.location.href = `/product/${p.id}`; }}
-                          style={{ fontSize: "11px", backgroundColor: "#fef3c7", color: "#92400e", padding: "4px 8px", borderRadius: "6px", fontWeight: "bold", cursor: "pointer", display: "inline-flex", alignItems: "center" }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.location.href = `/product/${p.id}`;
+                          }}
+                          style={{
+                            fontSize: "11px",
+                            backgroundColor: "#fef3c7",
+                            color: "#92400e",
+                            padding: "4px 8px",
+                            borderRadius: "6px",
+                            fontWeight: "bold",
+                            cursor: "pointer",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            whiteSpace: "nowrap",
+                          }}
                         >
                           View ↗
                         </span>
@@ -710,11 +799,11 @@ export default function TheStyleLoftClientDashboard() {
         </div>
       )}
 
-    {/* Shorts Modal Component */}
+      {/* Shorts Modal Component */}
       {isShortsOpen && (
         <ShortsModal onClose={() => setIsShortsOpen(false)} />
       )}
-      
+
       <Footer />
 
       <FloatingChatButton productName="The Style Loft Exclusive Collection" />

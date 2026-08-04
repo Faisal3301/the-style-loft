@@ -37,12 +37,12 @@ export default function ProductInfo({
   // Store Configurations
   const myWhatsAppNumber = "923184947722";
   const displayWhatsApp = "@thestyleloft72";
-  const myInstagramUsername = "thestyleloft_official";
+  const myInstagramUsername = "thestyleloft72";
   const storeEmail = "thestyleloft72@gmail.com";
 
   // Pre-formatted messages
   const whatsappMessage = encodeURIComponent(
-    `Hello! I want to inquire about this product:\n📌 Product: ${product?.name}\n💰 Price: $${product?.salePrice || product?.price}\n🔗 Link: ${currentProductUrl}`
+    `Hello! I want to inquire about this product:\n📌 Product: ${product?.name}\n Price: $${product?.salePrice || product?.price}\n🔗 Link: ${currentProductUrl}`
   );
   const emailSubject = encodeURIComponent(`Order/Inquiry: ${product?.name}`);
   const emailBody = encodeURIComponent(
@@ -148,7 +148,9 @@ export default function ProductInfo({
             <span className="discount-tag">Save Now</span>
           </div>
         ) : (
-          <span className="current-sale-price plain">${product?.price}</span>
+          <span className="current-sale-price plain">
+  {product?.price > 0 ? `$${product.price}` : "DM for Price"}
+</span>
         )}
       </div>
 

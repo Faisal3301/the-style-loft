@@ -31,6 +31,13 @@ interface Product {
     salePrice?: number;
     description?: string;
     offerDuration?: string;
+
+      // SEO fields
+    seoTitle?: string;
+    seoDescription?: string;
+    keywords?: string;
+    imageAlt?: string;
+    
     category: string;
     subCategory?: string;
     mediaUrl: string;
@@ -259,26 +266,39 @@ export default function AutoImportProductsPage() {
 
 
     // ✏️ UPDATE PRODUCT HANDLER
+    // ✏️ UPDATE PRODUCT HANDLER
     const handleUpdateProduct = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!editingProduct) return;
 
         try {
             const productRef = doc(db, "products", editingProduct.id);
+
             await updateDoc(productRef, {
+                // Basic Product Information
                 name: editingProduct.name,
                 price: parseFloat(editingProduct.price as any) || 0,
-                salePrice: editingProduct.salePrice ? parseFloat(editingProduct.salePrice as any) : null,
+                salePrice: editingProduct.salePrice
+                    ? parseFloat(editingProduct.salePrice as any)
+                    : null,
                 description: editingProduct.description || "",
-                offerDuration: editingProduct.offerDuration || ""
+                offerDuration: editingProduct.offerDuration || "",
+
+                // 🔍 SEO Information
+                seoTitle: editingProduct.seoTitle || "",
+                seoDescription: editingProduct.seoDescription || "",
+                keywords: editingProduct.keywords || "",
+                imageAlt: editingProduct.imageAlt || ""
             });
 
-            alert("✅ Item updated successfully!");
+            alert("✅ Product & SEO updated successfully!");
+
             setEditingProduct(null);
             fetchData();
+
         } catch (error) {
             console.error("Error updating product:", error);
-            alert("Failed to update item.");
+            alert("Failed to update product.");
         }
     };
 
@@ -690,6 +710,69 @@ export default function AutoImportProductsPage() {
                             <div>
                                 <label style={labelStyle}>Description [Optional]</label>
                                 <textarea placeholder="Enter product description..." value={editingProduct.description || ""} onChange={(e) => setEditingProduct({ ...editingProduct, description: e.target.value })} style={{ ...inputStyle, height: "70px", resize: "vertical" }} />
+                            </div>
+
+                            <div>
+                                <label style={labelStyle}>SEO Title</label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. Elegant White Tote Bag for Women"
+                                    value={editingProduct.seoTitle || ""}
+                                    onChange={(e) =>
+                                        setEditingProduct({
+                                            ...editingProduct,
+                                            seoTitle: e.target.value
+                                        })
+                                    }
+                                    style={inputStyle}
+                                />
+                            </div>
+
+                            <div>
+                                <label style={labelStyle}>SEO Description</label>
+                                <textarea
+                                    placeholder="Write a short SEO-friendly description..."
+                                    value={editingProduct.seoDescription || ""}
+                                    onChange={(e) =>
+                                        setEditingProduct({
+                                            ...editingProduct,
+                                            seoDescription: e.target.value
+                                        })
+                                    }
+                                    style={{ ...inputStyle, height: "70px", resize: "vertical" }}
+                                />
+                            </div>
+
+                            <div>
+                                <label style={labelStyle}>SEO Keywords</label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. women's tote bag, white handbag, fashion bag"
+                                    value={editingProduct.keywords || ""}
+                                    onChange={(e) =>
+                                        setEditingProduct({
+                                            ...editingProduct,
+                                            keywords: e.target.value
+                                        })
+                                    }
+                                    style={inputStyle}
+                                />
+                            </div>
+
+                            <div>
+                                <label style={labelStyle}>Image Alt Text</label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. White women's tote bag"
+                                    value={editingProduct.imageAlt || ""}
+                                    onChange={(e) =>
+                                        setEditingProduct({
+                                            ...editingProduct,
+                                            imageAlt: e.target.value
+                                        })
+                                    }
+                                    style={inputStyle}
+                                />
                             </div>
 
                             <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "10px" }}>
